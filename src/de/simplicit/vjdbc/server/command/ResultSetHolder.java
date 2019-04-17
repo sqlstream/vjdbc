@@ -22,7 +22,7 @@ import de.simplicit.vjdbc.server.config.ConnectionConfiguration;
  */
 public class ResultSetHolder {
     private static Log _logger = LogFactory.getLog(ResultSetHolder.class);
-    
+
     private final Object _lock = new Object();
     private boolean _readerThreadIsRunning = false;
 
@@ -98,7 +98,7 @@ public class ResultSetHolder {
                         // Aquire lock immediately
                         synchronized (_lock) {
                             try {
-                                // When the ResultSet is null here, the client closed the ResultSet concurrently right 
+                                // When the ResultSet is null here, the client closed the ResultSet concurrently right
                                 // after the upper check "_resultSet != null".
                                 if(_resultSet != null) {
                                     RowPacket rowPacket = new RowPacket(_connectionConfiguration.getRowPacketSize(), false);
@@ -119,7 +119,7 @@ public class ResultSetHolder {
                         }
                     }
                 });
-                
+
                 // Set the flag that the reader thread is considered to be running.
                 _readerThreadIsRunning = true;
             } catch (InterruptedException e) {

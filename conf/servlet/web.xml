@@ -8,16 +8,6 @@
     <display-name>VJdbcServlet</display-name>
     <description>Servlet for using VJdbc over HTTP</description>
 
-	<filter>
-   		<filter-name>CheckPropertyFilter</filter-name>
-   		<filter-class>de.simplicit.vjdbc.test.junit.http.CheckPropertyFilter</filter-class>
-	</filter>
-
-	<filter-mapping>
-   		<filter-name>CheckPropertyFilter</filter-name>
-   		<servlet-name>VJdbcServlet</servlet-name>
-	</filter-mapping>
-
     <servlet>
         <servlet-name>VJdbcServlet</servlet-name>
         <servlet-class>de.simplicit.vjdbc.server.servlet.ServletCommandSink</servlet-class>

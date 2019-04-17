@@ -50,9 +50,9 @@ public final class VirtualDriver implements Driver {
     private static final String SERVLET_IDENTIFIER = "servlet:";
     private static SecureSocketFactory _sslSocketFactory;
     private static boolean _cacheEnabled = false;
-    
+
     private static final int MAJOR_VERSION = 1;
-    private static final int MINOR_VERSION = 6;
+    private static final int MINOR_VERSION = 7;
 
     static {
         try {
@@ -80,17 +80,17 @@ public final class VirtualDriver implements Driver {
 
     public Connection connect(String urlstr, Properties props) throws SQLException {
         Connection result = null;
-        
+
         if(acceptsURL(urlstr)) {
             String realUrl = urlstr.substring(VJDBC_IDENTIFIER.length());
 
             _logger.info("VJdbc-URL: " + realUrl);
-            
+
             try {
                 CommandSink sink = null;
 
-                String[] urlparts; 
-                
+                String[] urlparts;
+
                 // EJB-Connection
                 if(realUrl.startsWith(EJB_IDENTIFIER)) {
                     urlparts = split(realUrl.substring(EJB_IDENTIFIER.length()));
@@ -125,11 +125,11 @@ public final class VirtualDriver implements Driver {
 
                 // Connect with the sink
                 UIDEx reg = sink.connect(
-                        urlparts[1], 
-                        props, 
-                        ClientInfo.getProperties(props.getProperty(VJdbcProperties.CLIENTINFO_PROPERTIES)), 
+                        urlparts[1],
+                        props,
+                        ClientInfo.getProperties(props.getProperty(VJdbcProperties.CLIENTINFO_PROPERTIES)),
                         new CallingContext());
-                
+
                 CallingContextFactory ctxFactory;
                 // The value 1 signals that every remote call shall provide a calling context. This should only
                 // be used for debugging purposes as sending of these objects is quite expensive.
@@ -147,7 +147,7 @@ public final class VirtualDriver implements Driver {
                 _logger.error(e);
                 throw SQLExceptionHelper.wrap(e);
             }
-        } 
+        }
 
         return result;
     }
@@ -198,9 +198,9 @@ public final class VirtualDriver implements Driver {
 
     private CommandSink createServletCommandSink(String url, Properties props) throws Exception {
         RequestEnhancer requestEnhancer = null;
-        
+
         String requestEnhancerFactoryClassName = props.getProperty(VJdbcProperties.SERVLET_REQUEST_ENHANCER_FACTORY);
-        
+
         if(requestEnhancerFactoryClassName != null) {
             _logger.debug("Found RequestEnhancerFactory class: " + requestEnhancerFactoryClassName);
             Class requestEnhancerFactoryClass = Class.forName(requestEnhancerFactoryClassName);
@@ -218,19 +218,19 @@ public final class VirtualDriver implements Driver {
             return new ServletCommandSinkJdkHttpClient(url, requestEnhancer);
         }
     }
-    
+
     // Helper method (can't use the 1.4-Method because support for 1.3 is desired)
     private String[] split(String url) {
-        char[] splitChars = { ',', ';', '#', '$', '§' };
+        char[] splitChars = { ',', ';', '#', '$' };
 
         for(int i = 0; i < splitChars.length; i++) {
             int charindex = url.indexOf(splitChars[i]);
-            
+
             if(charindex >= 0) {
                 return new String[] { url.substring(0, charindex), url.substring(charindex + 1) };
             }
         }
-        
+
         return new String[] { url, "" };
     }
 }

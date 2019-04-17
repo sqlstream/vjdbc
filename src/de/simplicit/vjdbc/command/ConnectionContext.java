@@ -12,9 +12,9 @@ import java.sql.SQLException;
  */
 public interface ConnectionContext {
     // Accessor methods to all registered JDBC objects
-    Object getJDBCObject(Object key);
-    void addJDBCObject(Object key, Object partner);
-    Object removeJDBCObject(Object key);
+    Object getJDBCObject(Long key);
+    void addJDBCObject(Long key, Object partner);
+    Object removeJDBCObject(Long key);
     // Compression
     int getCompressionMode();
     long getCompressionThreshold();

@@ -10,6 +10,7 @@ import de.simplicit.vjdbc.util.SQLExceptionHelper;
 
 import java.io.InputStream;
 import java.io.Reader;
+import java.io.CharArrayReader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
@@ -602,4 +603,296 @@ public class VirtualCallableStatement extends VirtualPreparedStatement implement
             srs.setCommandSink(_sink);
         }
     }
+
+    /* start JDBC4 support */
+    public RowId getRowId(int parameterIndex) throws SQLException {
+        return (RowId)_sink.process(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.CALLABLESTATEMENT, "getRowId",
+                new Object[]{new Integer(parameterIndex)},
+                ParameterTypeCombinations.INT));
+    }
+
+    public RowId getRowId(String parameterName) throws SQLException {
+        return (RowId)_sink.process(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.CALLABLESTATEMENT, "getRowId",
+                new Object[]{parameterName},
+                ParameterTypeCombinations.STR));
+    }
+
+    public void setRowId(String parameterName, RowId x) throws SQLException {
+        try {
+            CallableStatementSetRowIdCommand cmd =
+                new CallableStatementSetRowIdCommand(parameterName, new SerialRowId(x));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setNString(String parameterName, String x) throws SQLException {
+        _sink.process(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.CALLABLESTATEMENT, "setNString",
+                new Object[]{parameterName, x},
+                ParameterTypeCombinations.STRSTR));
+    }
+
+    public void setNCharacterStream(String parameterName, Reader reader, long length) throws SQLException {
+        try {
+            CallableStatementSetNCharacterStreamCommand cmd = new CallableStatementSetNCharacterStreamCommand(parameterName, reader, (int)length);
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setNClob(String parameterName, NClob value) throws SQLException {
+        try {
+            CallableStatementSetNClobCommand cmd = new CallableStatementSetNClobCommand(parameterName, value);
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setClob(String parameterName, Reader reader, long length) throws SQLException {
+        try {
+            CallableStatementSetClobCommand cmd =
+                new CallableStatementSetClobCommand(parameterName, new SerialClob(reader, length));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setBlob(String parameterName, InputStream inputStream, long length) throws SQLException {
+        try {
+            CallableStatementSetBlobCommand cmd =
+                new CallableStatementSetBlobCommand(parameterName, new SerialBlob(inputStream, length));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setNClob(String parameterName, Reader reader, long length) throws SQLException {
+        try {
+            CallableStatementSetNClobCommand cmd =
+                new CallableStatementSetNClobCommand(parameterName, new SerialNClob(reader, length));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public NClob getNClob(int parameterIndex) throws SQLException {
+        try {
+            CallableStatementGetNClobCommand cmd = new CallableStatementGetNClobCommand(parameterIndex);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return (SerialNClob)st.getTransportee();
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public NClob getNClob(String parameterName) throws SQLException {
+        try {
+            CallableStatementGetNClobCommand cmd = new CallableStatementGetNClobCommand(parameterName);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return (SerialNClob)st.getTransportee();
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setSQLXML(String parameterName, SQLXML xmlObject) throws SQLException {
+        try {
+            CallableStatementSetSQLXMLCommand cmd =
+                new CallableStatementSetSQLXMLCommand(parameterName, new SerialSQLXML(xmlObject));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public SQLXML getSQLXML(int parameterIndex) throws SQLException {
+        try {
+            CallableStatementGetSQLXMLCommand cmd = new CallableStatementGetSQLXMLCommand(parameterIndex);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return (SerialSQLXML)st.getTransportee();
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public SQLXML getSQLXML(String parameterName) throws SQLException {
+        try {
+            CallableStatementGetSQLXMLCommand cmd = new CallableStatementGetSQLXMLCommand(parameterName);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return (SerialSQLXML)st.getTransportee();
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public String getNString(int parameterIndex) throws SQLException {
+        return (String)_sink.process(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.CALLABLESTATEMENT, "getNString",
+                new Object[]{parameterIndex},
+                ParameterTypeCombinations.INT));
+    }
+
+    public String getNString(String parameterName) throws SQLException {
+        return (String)_sink.process(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.CALLABLESTATEMENT, "getNString",
+                new Object[]{parameterName},
+                ParameterTypeCombinations.STR));
+    }
+
+    public Reader getNCharacterStream(int parameterIndex) throws SQLException {
+        try {
+            CallableStatementGetNCharacterStreamCommand cmd = new CallableStatementGetNCharacterStreamCommand(parameterIndex);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return new CharArrayReader((char[])st.getTransportee());
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public Reader getNCharacterStream(String parameterName) throws SQLException {
+        try {
+            CallableStatementGetNCharacterStreamCommand cmd = new CallableStatementGetNCharacterStreamCommand(parameterName);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return new CharArrayReader((char[])st.getTransportee());
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public Reader getCharacterStream(int parameterIndex) throws SQLException {
+        try {
+            CallableStatementGetCharacterStreamCommand cmd = new CallableStatementGetCharacterStreamCommand(parameterIndex);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return new CharArrayReader((char[])st.getTransportee());
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public Reader getCharacterStream(String parameterName) throws SQLException {
+        try {
+            CallableStatementGetCharacterStreamCommand cmd = new CallableStatementGetCharacterStreamCommand(parameterName);
+            SerializableTransport st = (SerializableTransport)_sink.process(_objectUid, cmd);
+            return new CharArrayReader((char[])st.getTransportee());
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setClob(String parameterName, Clob clob) throws SQLException {
+        try {
+            CallableStatementSetClobCommand cmd =
+                new CallableStatementSetClobCommand(parameterName, clob);
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setBlob(String parameterName, Blob blob) throws SQLException {
+        try {
+            CallableStatementSetBlobCommand cmd =
+                new CallableStatementSetBlobCommand(parameterName, blob);
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setAsciiStream(String parameterName, InputStream x, long length) throws SQLException {
+        try {
+            _sink.process(_objectUid, new CallableStatementSetAsciiStreamCommand(parameterName, x, (int)length));
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setBinaryStream(String parameterName, InputStream x, long length) throws SQLException {
+        try {
+            _sink.process(_objectUid, new CallableStatementSetBinaryStreamCommand(parameterName, x, (int)length));
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setCharacterStream(String parameterName, Reader reader, long length) throws SQLException {
+        try {
+            CallableStatementSetCharacterStreamCommand cmd = new CallableStatementSetCharacterStreamCommand(parameterName, reader, (int)length);
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setAsciiStream(String parameterName, InputStream x) throws SQLException {
+        try {
+            _sink.process(_objectUid, new CallableStatementSetAsciiStreamCommand(parameterName, x));
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setBinaryStream(String parameterName, InputStream x) throws SQLException {
+        try {
+            _sink.process(_objectUid, new CallableStatementSetBinaryStreamCommand(parameterName, x));
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setCharacterStream(String parameterName, Reader reader) throws SQLException {
+        try {
+            CallableStatementSetCharacterStreamCommand cmd = new CallableStatementSetCharacterStreamCommand(parameterName, reader);
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setNCharacterStream(String parameterName, Reader reader) throws SQLException {
+        try {
+            CallableStatementSetNCharacterStreamCommand cmd = new CallableStatementSetNCharacterStreamCommand(parameterName, reader);
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setClob(String parameterName, Reader reader) throws SQLException {
+        try {
+            CallableStatementSetClobCommand cmd =
+                new CallableStatementSetClobCommand(parameterName, new SerialClob(reader));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setBlob(String parameterName, InputStream inputStream) throws SQLException {
+        try {
+            CallableStatementSetBlobCommand cmd =
+                new CallableStatementSetBlobCommand(parameterName, new SerialBlob(inputStream));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public void setNClob(String parameterName, Reader reader) throws SQLException {
+        try {
+            CallableStatementSetNClobCommand cmd =
+                new CallableStatementSetNClobCommand(parameterName, new SerialNClob(reader));
+            _sink.process(_objectUid, cmd);
+        } catch(Exception e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+
+
+    /* end JDBC4 support */
 }

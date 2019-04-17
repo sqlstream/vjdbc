@@ -25,7 +25,7 @@ public abstract class VirtualBase {
         _sink = null;
     }
 
-    UIDEx getObjectUID() {
+    public UIDEx getObjectUID() {
         return _objectUid;
     }
 }

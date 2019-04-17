@@ -4,8 +4,10 @@
 
 package de.simplicit.vjdbc.server.command;
 
+import de.simplicit.vjdbc.ProxiedObject;
 import de.simplicit.vjdbc.command.Command;
 import de.simplicit.vjdbc.command.ConnectionContext;
+import de.simplicit.vjdbc.command.StatementCancelCommand;
 import de.simplicit.vjdbc.command.ResultSetProducerCommand;
 import de.simplicit.vjdbc.serial.CallingContext;
 import de.simplicit.vjdbc.serial.SerialResultSetMetaData;
@@ -13,6 +15,7 @@ import de.simplicit.vjdbc.serial.SerializableTransport;
 import de.simplicit.vjdbc.serial.StreamingResultSet;
 import de.simplicit.vjdbc.serial.UIDEx;
 import de.simplicit.vjdbc.server.config.ConnectionConfiguration;
+import de.simplicit.vjdbc.server.config.VJdbcConfiguration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -43,9 +46,11 @@ class ConnectionEntry implements ConnectionContext {
 
     // Map containing all JDBC-Objects which are created by this Connection
     // entry
-    private Map _jdbcObjects = Collections.synchronizedMap(new HashMap());
+    private Map<Long, JdbcObjectHolder> _jdbcObjects =
+        Collections.synchronizedMap(new HashMap<Long, JdbcObjectHolder>());
     // Map for counting commands
-    private Map _commandCountMap = Collections.synchronizedMap(new HashMap());
+    private Map<String, Integer> _commandCountMap =
+        Collections.synchronizedMap(new HashMap<String, Integer>());
 
     ConnectionEntry(Long connuid, Connection conn, ConnectionConfiguration config, Properties clientInfo, CallingContext ctx) {
         _connection = conn;
@@ -60,12 +65,12 @@ class ConnectionEntry implements ConnectionContext {
         try {
             if(!_connection.isClosed()) {
                 _connection.close();
-    
+
                 if(_logger.isDebugEnabled()) {
                     _logger.debug("Closed connection " + _uid);
                 }
             }
-            
+
             traceConnectionStatistics();
         } catch (SQLException e) {
             _logger.error("Exception during closing connection", e);
@@ -92,8 +97,8 @@ class ConnectionEntry implements ConnectionContext {
         return _numberOfProcessedCommands;
     }
 
-    public Object getJDBCObject(Object key) {
-        JdbcObjectHolder jdbcObjectHolder = (JdbcObjectHolder) _jdbcObjects.get(key);
+    public Object getJDBCObject(Long key) {
+        JdbcObjectHolder jdbcObjectHolder = _jdbcObjects.get(key);
         if(jdbcObjectHolder != null) {
             return jdbcObjectHolder.getJdbcObject();
         } else {
@@ -101,12 +106,12 @@ class ConnectionEntry implements ConnectionContext {
         }
     }
 
-    public void addJDBCObject(Object key, Object partner) {
+    public void addJDBCObject(Long key, Object partner) {
         _jdbcObjects.put(key, new JdbcObjectHolder(partner, null));
     }
 
-    public Object removeJDBCObject(Object key) {
-        JdbcObjectHolder jdbcObjectHolder = (JdbcObjectHolder) _jdbcObjects.remove(key);
+    public Object removeJDBCObject(Long key) {
+        JdbcObjectHolder jdbcObjectHolder = _jdbcObjects.remove(key);
         if(jdbcObjectHolder != null) {
             return jdbcObjectHolder.getJdbcObject();
         } else {
@@ -151,7 +156,7 @@ class ConnectionEntry implements ConnectionContext {
             // Some target object ?
             if(uid != null) {
                 // ... get it
-                JdbcObjectHolder target = (JdbcObjectHolder) _jdbcObjects.get(uid);
+                JdbcObjectHolder target = _jdbcObjects.get(uid);
 
                 if(target != null) {
                     if(_logger.isDebugEnabled()) {
@@ -171,7 +176,8 @@ class ConnectionEntry implements ConnectionContext {
                         return uidResult;
                     } else {
                         // When the result is of type ResultSet then handle it specially
-                        if(result != null) {
+                        if(result != null &&
+                           VJdbcConfiguration.getUseCustomResultSetHandling()) {
                             if(result instanceof ResultSet) {
                                 boolean forwardOnly = false;
                                 if(cmd instanceof ResultSetProducerCommand) {
@@ -199,7 +205,7 @@ class ConnectionEntry implements ConnectionContext {
 
             if(_connectionConfiguration.isTraceCommandCount()) {
                 String cmdString = cmd.toString();
-                Integer oldval = (Integer) _commandCountMap.get(cmdString);
+                Integer oldval = _commandCountMap.get(cmdString);
                 if(oldval == null) {
                     _commandCountMap.put(cmdString, new Integer(1));
                 } else {
@@ -215,12 +221,21 @@ class ConnectionEntry implements ConnectionContext {
             _lastAccessTimestamp = System.currentTimeMillis();
         }
     }
-    
-    public void cancelCurrentStatementExecution(Long uid) throws SQLException {
+
+    public void cancelCurrentStatementExecution(
+        Long connuid, Long uid, StatementCancelCommand cmd)
+        throws SQLException {
         // Get the Statement object
-        JdbcObjectHolder target = (JdbcObjectHolder) _jdbcObjects.get(uid);
-        Statement statement = (Statement)target.getJdbcObject();
-        statement.cancel();
+        JdbcObjectHolder target = _jdbcObjects.get(uid);
+
+        if (target != null) {
+            cmd.execute(target.getJdbcObject(), this);
+            //Statement statement = (Statement)target.getJdbcObject();
+            // statement.cancel();
+        } else {
+            target = _jdbcObjects.get(connuid);
+            cmd.execute(target.getJdbcObject(), this);
+        }
     }
 
     public void traceConnectionStatistics() {
@@ -233,8 +248,8 @@ class ConnectionEntry implements ConnectionContext {
 
         if(_jdbcObjects.size() > 0) {
             _logger.info("  Remaining objects .... " + _jdbcObjects.size());
-            for(Iterator it = _jdbcObjects.values().iterator(); it.hasNext();) {
-                JdbcObjectHolder jdbcObjectHolder = (JdbcObjectHolder) it.next();
+            for(Iterator<JdbcObjectHolder> it = _jdbcObjects.values().iterator(); it.hasNext();) {
+                JdbcObjectHolder jdbcObjectHolder = it.next();
                 _logger.info("  - " + jdbcObjectHolder.getJdbcObject().getClass().getName());
                 if(_connectionConfiguration.isTraceOrphanedObjects()) {
                     if(jdbcObjectHolder.getCallingContext() != null) {
@@ -242,7 +257,7 @@ class ConnectionEntry implements ConnectionContext {
                     }
                 }
             }
-        } 
+        }
 
         if(!_commandCountMap.isEmpty()) {
             _logger.info("  Command-Counts:");
@@ -273,9 +288,9 @@ class ConnectionEntry implements ConnectionContext {
     private Object handleResultSet(ResultSet result, boolean forwardOnly, CallingContext ctx) throws SQLException {
         // Populate a StreamingResultSet
         StreamingResultSet srs = new StreamingResultSet(
-                _connectionConfiguration.getRowPacketSize(), 
-                forwardOnly, 
-                _connectionConfiguration.isPrefetchResultSetMetaData(), 
+                _connectionConfiguration.getRowPacketSize(),
+                forwardOnly,
+                _connectionConfiguration.isPrefetchResultSetMetaData(),
                 _connectionConfiguration.getCharset());
         // Populate it
         boolean lastPartReached = srs.populate(result);
@@ -296,7 +311,7 @@ class ConnectionEntry implements ConnectionContext {
     private void dumpClientInfoProperties() {
         if(_logger.isInfoEnabled() && !_clientInfo.isEmpty()) {
             boolean printedHeader = false;
-            
+
             for(Enumeration it = _clientInfo.keys(); it.hasMoreElements();) {
                 String key = (String) it.nextElement();
                 if(!key.startsWith("vjdbc")) {
@@ -309,7 +324,7 @@ class ConnectionEntry implements ConnectionContext {
             }
         }
     }
-    
+
     private String getNamedQuery(String id) throws SQLException {
         if(_connectionConfiguration.getNamedQueries() != null) {
             return _connectionConfiguration.getNamedQueries().getSqlForId(id);

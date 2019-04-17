@@ -10,7 +10,7 @@ import java.sql.SQLException;
 
 public class SerialBlob implements Blob, Externalizable {
     private static final long serialVersionUID = 3258134639489857079L;
-    
+
     private byte[] _data;
 
     public SerialBlob() {
@@ -26,9 +26,48 @@ public class SerialBlob implements Blob, Externalizable {
                 baos.write(buff, 0, len);
             }
             _data = baos.toByteArray();
+            other.free();
         } catch(IOException e) {
             throw new SQLException("Can't retrieve contents of Blob", e.toString());
         }
+    }
+
+    public SerialBlob(InputStream is) throws SQLException {
+        try {
+            init(is);
+        } catch(IOException e) {
+            throw new SQLException("Can't retrieve contents of Clob", e.toString());
+        }
+    }
+
+    public SerialBlob(InputStream is, long length) throws SQLException {
+        try {
+            init(is, length);
+        } catch(IOException e) {
+            throw new SQLException("Can't retrieve contents of Clob", e.toString());
+        }
+    }
+
+    public void init(InputStream is) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buff = new byte[1024];
+        int len;
+        while((len = is.read(buff)) > 0) {
+            baos.write(buff, 0, len);
+        }
+        _data = baos.toByteArray();
+    }
+
+    public void init(InputStream is, long length) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        byte[] buff = new byte[1024];
+        int len;
+        long toRead = length;
+        while (toRead > 0 && (len = is.read(buff, 0, (int)(toRead > 1024 ? 1024 : toRead))) > 0) {
+            baos.write(buff, 0, len);
+            toRead -= len;
+        }
+        _data = baos.toByteArray();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
@@ -44,9 +83,20 @@ public class SerialBlob implements Blob, Externalizable {
     }
 
     public byte[] getBytes(long pos, int length) throws SQLException {
-        byte[] result = new byte[length];
-        System.arraycopy(_data, (int)pos - 1, result, 0, length);
-        return result;
+        if (pos <= Integer.MAX_VALUE) {
+            byte[] result = new byte[length];
+            System.arraycopy(_data, (int)pos - 1, result, 0, length);
+            return result;
+        }
+
+        // very slow but gets around problems with the pos being represented
+        // as long instead of an int in most java.io and other byte copying
+        // APIs
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (long i = 0; i < length; ++i) {
+            baos.write(_data[(int)(pos + i)]);
+        }
+        return baos.toByteArray();
     }
 
     public InputStream getBinaryStream() throws SQLException {
@@ -76,4 +126,25 @@ public class SerialBlob implements Blob, Externalizable {
     public void truncate(long len) throws SQLException {
         throw new UnsupportedOperationException("Blob.truncate");
     }
+
+    /* start JDBC4 support */
+    public InputStream getBinaryStream(long pos, long length) throws SQLException {
+        if (pos <= Integer.MAX_VALUE && length <= Integer.MAX_VALUE) {
+            return new ByteArrayInputStream(_data, (int)pos, (int)length);
+        }
+
+        // very slow but gets around problems with the pos being represented
+        // as long instead of an int in most java.io and other byte copying
+        // APIs
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (long i = 0; i < length; ++i) {
+            baos.write(_data[(int)(i + pos)]);
+        }
+        return new ByteArrayInputStream(baos.toByteArray());
+    }
+
+    public void free() throws SQLException {
+        _data = null;
+    }
+    /* end JDBC4 support */
 }

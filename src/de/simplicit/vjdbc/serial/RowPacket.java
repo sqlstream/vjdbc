@@ -120,6 +120,12 @@ public class RowPacket implements Externalizable {
                     _flattenedColumnsValues[internalIndex].setObject(_rowCount, rs.getString(i));
                     break;
 
+                case Types.NCHAR:
+                case Types.NVARCHAR:
+                case Types.LONGNVARCHAR:
+                    _flattenedColumnsValues[internalIndex].setObject(_rowCount, rs.getNString(i));
+                    break;
+
                 case Types.NUMERIC:
                 case Types.DECIMAL:
                     _flattenedColumnsValues[internalIndex].setObject(_rowCount, rs.getBigDecimal(i));
@@ -180,6 +186,10 @@ public class RowPacket implements Externalizable {
                     _flattenedColumnsValues[internalIndex].setObject(_rowCount, new SerialClob(rs.getClob(i)));
                     break;
 
+                case Types.NCLOB:
+                    _flattenedColumnsValues[internalIndex].setObject(_rowCount, new SerialNClob(rs.getNClob(i)));
+                    break;
+
                 case Types.BLOB:
                     _flattenedColumnsValues[internalIndex].setObject(_rowCount, new SerialBlob(rs.getBlob(i)));
                     break;
@@ -191,10 +201,19 @@ public class RowPacket implements Externalizable {
                 case Types.STRUCT:
                     _flattenedColumnsValues[internalIndex].setObject(_rowCount, new SerialStruct((Struct) rs.getObject(i)));
                     break;
-                    
+
                 case ORACLE_ROW_ID:
-                    _flattenedColumnsValues[internalIndex].setObject(_rowCount, rs.getString(i));
-                    break; 
+                    _flattenedColumnsValues[internalIndex].setObject(_rowCount, new SerialRowId(rs.getRowId(i)));
+                    break;
+
+                    // what oracle does instead of SQLXML in their 1.6 driver,
+                    // don't ask me why, commented out so we don't need
+                    // an oracle driver to compile this class
+                    //case 2007:
+                    //_flattenedColumnsValues[internalIndex].setObject(_rowCount, new XMLType(((OracleResultSet)rs).getOPAQUE(i)));
+                case Types.SQLXML:
+                    _flattenedColumnsValues[internalIndex].setObject(_rowCount, new SerialSQLXML(rs.getSQLXML(i)));
+                    break;
 
                 default:
                     if(JavaVersionInfo.use14Api) {
@@ -218,7 +237,7 @@ public class RowPacket implements Externalizable {
                     throw new SQLException("Unsupported JDBC-Type: " + _columnTypes[internalIndex]);
                 }
             }
-            
+
             _rowCount++;
 
             if(_maxrows > 0 && _rowCount == _maxrows) {
@@ -227,7 +246,7 @@ public class RowPacket implements Externalizable {
         }
 
         _lastPart = _maxrows == 0 || _rowCount < _maxrows;
-        
+
         return _lastPart;
     }
 

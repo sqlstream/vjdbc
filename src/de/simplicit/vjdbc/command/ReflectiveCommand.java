@@ -31,13 +31,13 @@ public class ReflectiveCommand implements Command, Externalizable {
 
     public ReflectiveCommand() {
     }
-    
-    public ReflectiveCommand(int interfaceType, String cmd) {    
+
+    public ReflectiveCommand(int interfaceType, String cmd) {
         _interfaceType = interfaceType;
         _cmd = cmd;
         _parameters = _zeroParameters;
     }
-    
+
     public ReflectiveCommand(int interfaceType, String cmd, Object[] parms, int parmTypes) {
         _interfaceType = interfaceType;
         _cmd = cmd;
@@ -47,15 +47,22 @@ public class ReflectiveCommand implements Command, Externalizable {
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(_interfaceType);
-        out.writeObject(_cmd);
-        out.writeObject(_parameters);
+        out.writeUTF(_cmd);
+        out.writeInt(_parameters.length);
+        for (int i = 0; i < _parameters.length; i++) {
+            out.writeObject(_parameters[i]);
+        }
         out.writeInt(_parameterTypes);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         _interfaceType = in.readInt();
-        _cmd = (String)in.readObject();
-        _parameters = (Object[])in.readObject();
+        _cmd = in.readUTF();
+        int len = in.readInt();
+        _parameters = new Object[len];
+        for (int i = 0; i < _parameters.length; i++) {
+            _parameters[i] = in.readObject();
+        }
         _parameterTypes = in.readInt();
     }
 

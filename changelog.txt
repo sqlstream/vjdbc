@@ -7,6 +7,13 @@ OPT = Optimization
 CLN = Cleanup/Refactoring
 OTH = Other
 
+Release 1.7.0 (06 Feb 2010)
+---------------------------
+* FEA: Upgraded source base to JDBC4 and JDK 1.6
+* BUG: Fixed bug in the metadata classes which routed a ReflectiveCommand to the wrong server side JDBC class
+* FEA: Added the ability to manually insert a JDBC object into the server side connection so more than just an id can be returned to the client
+* OTH: upgraded to Apache Commons DBCP 1.4 (from 1.2.1)
+
 Release 1.6.5 (05 Feb 2007)
 ---------------------------
 * FEA: ServletCommandSink now searches the whole classpath for the configuration resource

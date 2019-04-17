@@ -14,18 +14,26 @@ public class CharStreamParameter implements PreparedStatementParameter {
     static final long serialVersionUID = -3934051486806729706L;
 
     private char[] _value;
-    
+
     public CharStreamParameter() {
     }
 
-    public CharStreamParameter(Reader x, int length) throws SQLException {
+    public CharStreamParameter(Reader x) throws SQLException {
+        try {
+            _value = de.simplicit.vjdbc.serial.StreamSerializer.toCharArray(x);
+        } catch(IOException e) {
+            throw SQLExceptionHelper.wrap(e);
+        }
+    }
+
+    public CharStreamParameter(Reader x, long length) throws SQLException {
         try {
             _value = de.simplicit.vjdbc.serial.StreamSerializer.toCharArray(x, length);
         } catch(IOException e) {
             throw SQLExceptionHelper.wrap(e);
         }
     }
-    
+
     public char[] getValue() {
         return _value;
     }

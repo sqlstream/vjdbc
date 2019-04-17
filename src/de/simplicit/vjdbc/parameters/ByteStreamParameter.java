@@ -17,18 +17,18 @@ public class ByteStreamParameter implements PreparedStatementParameter {
 
     private int _type;
     private byte[] _value;
-    private int _length;
-    
+    private long _length;
+
     public ByteStreamParameter() {
     }
 
-    public ByteStreamParameter(int type, InputStream x, int length) throws SQLException {
+    public ByteStreamParameter(int type, InputStream x, long length) throws SQLException {
         _type = type;
         _length = length;
 
         BufferedInputStream s = new BufferedInputStream(x);
         try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(length >= 0 ? length : 1024);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream((int)(length >= 0 ? length : 1024));
             byte buf[] = new byte[1024];
             int br;
             while((br = s.read(buf)) >= 0) {
@@ -51,7 +51,7 @@ public class ByteStreamParameter implements PreparedStatementParameter {
             }
         }
     }
-    
+
     public byte[] getValue() {
         return _value;
     }
@@ -59,13 +59,13 @@ public class ByteStreamParameter implements PreparedStatementParameter {
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         _type = in.readInt();
         _value = (byte[])in.readObject();
-        _length = in.readInt();
+        _length = in.readLong();
     }
 
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(_type);
         out.writeObject(_value);
-        out.writeInt(_length);
+        out.writeLong(_length);
     }
 
     public void setParameter(PreparedStatement pstmt, int index) throws SQLException {
@@ -77,7 +77,9 @@ public class ByteStreamParameter implements PreparedStatementParameter {
                 break;
 
             case TYPE_UNICODE:
-                pstmt.setUnicodeStream(index, bais, _length);
+                // its ok to downcast here as there is no setUnicodeStream()
+                // variant with a long length value
+                pstmt.setUnicodeStream(index, bais, (int)_length);
                 break;
 
             case TYPE_BINARY:

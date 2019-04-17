@@ -24,6 +24,18 @@ public class CallableStatementSetCharacterStreamCommand implements Command {
     public CallableStatementSetCharacterStreamCommand() {
     }
 
+    public CallableStatementSetCharacterStreamCommand(int index, Reader reader) throws IOException {
+        _index = index;
+        _charArray = StreamSerializer.toCharArray(reader);
+        _length = _charArray.length;
+    }
+
+    public CallableStatementSetCharacterStreamCommand(String paramName, Reader reader) throws IOException {
+        _parameterName = paramName;
+        _charArray = StreamSerializer.toCharArray(reader);
+        _length = _charArray.length;
+    }
+
     public CallableStatementSetCharacterStreamCommand(int index, Reader reader, int len) throws IOException {
         _index = index;
         _length = len;

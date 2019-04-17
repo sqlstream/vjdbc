@@ -36,20 +36,35 @@ public class StreamSerializer {
         return new ByteArrayInputStream(buf);
     }
 
-    public static char[] toCharArray(Reader reader, int length) throws IOException {
+    public static char[] toCharArray(Reader reader) throws IOException {
         if(reader == null) {
             return null;
         }
 
-        CharArrayWriter caw = new CharArrayWriter(length);
+        CharArrayWriter caw = new CharArrayWriter(1024);
         char[] buffer = new char[1024];
-        int offset = 0;
+        int readChars;
+
+        while((readChars = reader.read(buffer)) > 0) {
+            caw.write(buffer, 0, readChars);
+        }
+
+        return caw.toCharArray();
+    }
+
+    public static char[] toCharArray(Reader reader, long length) throws IOException {
+        if(reader == null) {
+            return null;
+        }
+
+        CharArrayWriter caw = new CharArrayWriter((int)length);
+        char[] buffer = new char[1024];
 
         while(length > 0) {
             int readChars = reader.read(buffer);
 
             if(readChars >= 0) {
-                caw.write(buffer, offset, Math.min(readChars, length));
+                caw.write(buffer, 0, (int)Math.min((long)readChars, length));
                 length -= readChars;
             }
         }

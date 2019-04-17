@@ -16,7 +16,8 @@ import java.sql.DriverManager;
 public class MySqlDbAddressTest extends AddressTest {
     public static Test suite() throws Exception {
         TestSuite suite = new TestSuite();
-        
+
+        Class.forName("com.mysql.jdbc.Driver");
         VJdbcTest.addAllTestMethods(suite, MySqlDbAddressTest.class);
 
         TestSetup wrapper = new TestSetup(suite) {
@@ -38,7 +39,7 @@ public class MySqlDbAddressTest extends AddressTest {
 
     protected Connection createNativeDatabaseConnection() throws Exception {
         Class.forName("com.mysql.jdbc.Driver");
-        return DriverManager.getConnection("jdbc:mysql:///test", "vjdbc", "vjdbc");
+        return DriverManager.getConnection("jdbc:mysql:///test", "root", "");
     }
 
     protected String getVJdbcDatabaseShortcut() {

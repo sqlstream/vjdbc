@@ -21,9 +21,9 @@ public class VirtualStatement extends VirtualBase implements Statement {
     protected int _queryTimeout = -1;
     protected StreamingResultSet _currentResultSet;
     protected int _resultSetType;
-    private boolean _isClosed = false;
+    protected boolean _isClosed = false;
 
-    VirtualStatement(UIDEx reg, Connection connection, DecoratedCommandSink theSink, int resultSetType) {
+    public VirtualStatement(UIDEx reg, Connection connection, DecoratedCommandSink theSink, int resultSetType) {
         super(reg, theSink);
         // Remember the connection
         _connection = connection;
@@ -140,7 +140,7 @@ public class VirtualStatement extends VirtualBase implements Statement {
     public boolean execute(String sql) throws SQLException {
         // Reset the current ResultSet before executing this command
         _currentResultSet = null;
-        
+
         return _sink.processWithBooleanResult(_objectUid, new StatementExecuteCommand(sql));
     }
 
@@ -268,4 +268,29 @@ public class VirtualStatement extends VirtualBase implements Statement {
         return _sink.processWithIntResult(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.STATEMENT,
                 "getResultSetHoldability"));
     }
+
+    /* start JDBC4 support */
+    public boolean isClosed() throws SQLException {
+        return _isClosed;
+    }
+
+    public void setPoolable(boolean poolable) throws SQLException {
+        _sink.process(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.STATEMENT, "setPoolable",
+                new Object[]{poolable ? Boolean.TRUE : Boolean.FALSE},
+                ParameterTypeCombinations.BOL));
+    }
+
+    public boolean isPoolable() throws SQLException {
+        return _sink.processWithBooleanResult(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.STATEMENT,
+                "isPoolable"));
+    }
+
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        return iface.isAssignableFrom(VirtualStatement.class);
+    }
+
+    public <T> T unwrap(Class<T> iface) throws SQLException {
+        return (T)this;
+    }
+    /* end JDBC4 support */
 }

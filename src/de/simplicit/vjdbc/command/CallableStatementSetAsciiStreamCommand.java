@@ -24,6 +24,18 @@ public class CallableStatementSetAsciiStreamCommand implements Command {
     public CallableStatementSetAsciiStreamCommand() {
     }
 
+    public CallableStatementSetAsciiStreamCommand(int index, InputStream is) throws IOException {
+        _index = index;
+        _byteArray = StreamSerializer.toByteArray(is);
+        _length = _byteArray.length;
+    }
+
+    public CallableStatementSetAsciiStreamCommand(String paramName, InputStream is) throws IOException {
+        _parameterName = paramName;
+        _byteArray = StreamSerializer.toByteArray(is);
+        _length = _byteArray.length;
+    }
+
     public CallableStatementSetAsciiStreamCommand(int index, InputStream is, int len) throws IOException {
         _index = index;
         _length = len;

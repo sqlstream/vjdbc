@@ -7,11 +7,7 @@ package de.simplicit.vjdbc.test.junit.general;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 import de.simplicit.vjdbc.test.junit.VJdbcTest;
 
@@ -20,6 +16,10 @@ public abstract class AddressTest extends VJdbcTest {
 
     public AddressTest(String s) {
         super(s);
+    }
+
+    public String getCreateBlobsTableSql() {
+        return "create table SomeBlobs (id int, description binary(100))";
     }
 
     protected void oneTimeSetup() throws Exception {
@@ -51,7 +51,7 @@ public abstract class AddressTest extends VJdbcTest {
         assertEquals(updates.length, NUMBER_OF_ADDRESSES);
         pstmt.close();
 
-        stmt.executeUpdate("create table SomeBlobs (id int, description binary(100))");
+        stmt.executeUpdate(getCreateBlobsTableSql());
         stmt.close();
 
         pstmt = connVJdbc.prepareStatement("insert into SomeBlobs values (?, ?)");
@@ -169,10 +169,18 @@ public abstract class AddressTest extends VJdbcTest {
             }
         });
         t.start();
-        ResultSet rs = stmt.executeQuery("select * from Address a, Address b where a.id = b.id");
-        rs.close();
-        stmt.close();
-        t.join();
+        ResultSet rs = null;
+        try {
+            rs = stmt.executeQuery("select * from Address a, Address b where a.id = b.id");
+            assertTrue(false);
+        } catch (SQLException sqle) {
+        } finally {
+            if (rs != null) {
+                rs.close();
+            }
+            stmt.close();
+            t.join();
+        }
     }
 
     public void testConversions() throws Exception {
@@ -189,15 +197,10 @@ public abstract class AddressTest extends VJdbcTest {
         int vId = rsVJdbc.getInt("id");
         boolean nIsZero = rsNative.getBoolean("somenumber");
         boolean vIsZero = rsVJdbc.getBoolean("somenumber");
-        assertFalse(nIsZero);
-        assertFalse(vIsZero);
+        assertEquals(nIsZero, vIsZero);
+
         nIsZero = rsNative.getBoolean("stringboolean");
         vIsZero = rsVJdbc.getBoolean("stringboolean");
-        if((nId & 1) == 0) {
-            assertFalse(nIsZero);
-        } else {
-            assertTrue(nIsZero);
-        }
         assertEquals(nId, vId);
         assertEquals(nIsZero, vIsZero);
         // Check String-to-Integer conversion
@@ -224,7 +227,8 @@ public abstract class AddressTest extends VJdbcTest {
             stmtVJdbc.executeQuery("select * from nonexistingtable");
         } catch (SQLException e) {
             String msg = e.getMessage().toLowerCase();
-            assertTrue(msg.indexOf("table not found") >= 0 || msg.indexOf("doesn't exist") >= 0);
+            System.out.println("err msg " + msg);
+            assertTrue(msg.indexOf("table not found") >= 0 || msg.indexOf("doesn't exist") >= 0 || msg.indexOf("does not exist") >= 0);
             assertTrue(msg.indexOf("nonexistingtable") >= 0);
         }
         stmtVJdbc.close();
@@ -269,19 +273,22 @@ public abstract class AddressTest extends VJdbcTest {
         rs.close();
         stmt.close();
     }
-    
+
     public void testReadBlobs() throws Exception {
         Statement stmt = _connVJdbc.createStatement();
         ResultSet rs = stmt.executeQuery("select * from SomeBlobs");
         assertTrue(rs.next());
-        assertEquals("Blob1", new String(rs.getBytes(2)));
+        assertEquals("Blob1", new String(rs.getBytes(2)).trim());
         assertTrue(rs.next());
         InputStream is = rs.getBinaryStream(2);
         byte[] buff = new byte[10];
-        assertEquals(5, is.read(buff, 0, buff.length));
-        assertEquals("Blob2", new String(buff, 0, 5));
+        int bytesRead = is.read(buff, 0, buff.length);
+        // could be ASCII or UNICODE
+        assertTrue(10 == bytesRead || 5 == bytesRead);
+        String blobStr = new String(buff, 0, bytesRead);
+        assertEquals("Blob2", blobStr.trim());
     }
-    
+
     /*
     public void testCustomResultSetQuery() throws Exception {
         PreparedStatement pstmt = _connVJdbc.prepareStatement("#getAddress");
@@ -361,18 +368,18 @@ public abstract class AddressTest extends VJdbcTest {
      * connVJdbc = null; try { connVJdbc = createVJdbcConnection(); Statement
      * stmt1 = connVJdbc.createStatement(); Statement stmt2 =
      * connVJdbc.createStatement();
-     * 
+     *
      * String query1 = "select * from Address where id > 100 and id < 200";
      * String query2 = "select * from Address where id between 400 and 500";
-     * 
+     *
      * ResultSet rs1a = stmt1.executeQuery(query1);
      * assertTrue(stmt2.execute(query1 + ";" + query2)); ResultSet rs2a =
      * stmt2.getResultSet(); compareResultSets(rs1a, rs2a);
-     * 
+     *
      * ResultSet rs1b = stmt1.executeQuery(query2);
      * assertTrue(stmt2.getMoreResults()); ResultSet rs2b =
      * stmt2.getResultSet(); compareResultSets(rs1b, rs2b);
-     * 
+     *
      * stmt1.close(); stmt2.close(); } finally { connVJdbc.close(); } }
      */
 }

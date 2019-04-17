@@ -10,15 +10,12 @@ import de.simplicit.vjdbc.serial.StreamingResultSet;
 import de.simplicit.vjdbc.serial.UIDEx;
 import de.simplicit.vjdbc.util.SQLExceptionHelper;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class VirtualDatabaseMetaData extends VirtualBase implements DatabaseMetaData {
     private Connection _connection;
 
-    VirtualDatabaseMetaData(Connection conn, UIDEx reg, DecoratedCommandSink sink) {
+    public VirtualDatabaseMetaData(Connection conn, UIDEx reg, DecoratedCommandSink sink) {
         super(reg, sink);
         _connection = conn;
     }
@@ -813,7 +810,7 @@ public class VirtualDatabaseMetaData extends VirtualBase implements DatabaseMeta
     public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern,
             String attributeNamePattern) throws SQLException {
         return queryResultSet(CommandPool
-                .getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA, "getSuperTables", new Object[] { catalog, schemaPattern,
+                .getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA, "getAttributes", new Object[] { catalog, schemaPattern,
                         typeNamePattern, attributeNamePattern }, ParameterTypeCombinations.STRSTRSTRSTR));
     }
 
@@ -863,7 +860,7 @@ public class VirtualDatabaseMetaData extends VirtualBase implements DatabaseMeta
                 "supportsStatementPooling"));
     }
 
-    private ResultSet queryResultSet(Command cmd) throws SQLException {
+    protected ResultSet queryResultSet(Command cmd) throws SQLException {
         try {
             SerializableTransport st = (SerializableTransport) _sink.process(_objectUid, cmd, true);
             StreamingResultSet rs = (StreamingResultSet) st.getTransportee();
@@ -873,4 +870,48 @@ public class VirtualDatabaseMetaData extends VirtualBase implements DatabaseMeta
             throw SQLExceptionHelper.wrap(e);
         }
     }
+
+    /* start JDBC4 support */
+    public RowIdLifetime getRowIdLifetime() throws SQLException {
+        return RowIdLifetime.valueOf((String)_sink.process(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA, "getRowIdLifetime")));
+    }
+
+    public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
+        return queryResultSet(CommandPool.getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA, "getSchemas", new Object[] { catalog,
+                schemaPattern }, ParameterTypeCombinations.STRSTR));
+    }
+
+    public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
+        return _sink.processWithBooleanResult(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA,
+                "supportsStoredFunctionsUsingCallSyntax"));
+    }
+
+    public boolean autoCommitFailureClosesAllResultSets() throws SQLException {
+        return _sink.processWithBooleanResult(_objectUid, CommandPool.getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA,
+                "autoCommitFailureClosesAllResultSets"));
+    }
+
+    public ResultSet getClientInfoProperties() throws SQLException {
+        return queryResultSet(CommandPool.getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA, "getClientInfoProperties"));
+    }
+
+    public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern) throws SQLException {
+        return queryResultSet(CommandPool.getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA, "getFunctions", new Object[] { catalog,
+                schemaPattern, functionNamePattern }, ParameterTypeCombinations.STRSTR));
+    }
+
+    public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern, String columnNamePattern) throws SQLException {
+        return queryResultSet(CommandPool.getReflectiveCommand(JdbcInterfaceType.DATABASEMETADATA, "getFunctionColumns", new Object[] { catalog,
+                schemaPattern, functionNamePattern, columnNamePattern },
+                ParameterTypeCombinations.STRSTRSTRSTR));
+    }
+
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        return iface.isAssignableFrom(VirtualDatabaseMetaData.class);
+    }
+
+    public <T> T unwrap(Class<T> iface) throws SQLException {
+        return (T)this;
+    }
+    /* end JDBC4 support */
 }

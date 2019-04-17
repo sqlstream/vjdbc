@@ -21,6 +21,9 @@ public class BlobClobTest extends Oracle9iTest {
 
         suite.addTest(new BlobClobTest("testInsertBlobs"));
         suite.addTest(new BlobClobTest("testInsertClobs"));
+        suite.addTest(new BlobClobTest("testInsertNClobs"));
+        //suite.addTest(new BlobClobTest("testInsertSQLXMLs"));
+        suite.addTest(new BlobClobTest("testInsertNStrings"));
 
         TestSetup wrapper = new TestSetup(suite) {
             protected void setUp() throws Exception {
@@ -46,9 +49,13 @@ public class BlobClobTest extends Oracle9iTest {
 
         System.out.println("Creating tables ...");
         Statement stmt = connVJdbc.createStatement();
-        dropTables(stmt, new String[]{"blobs", "clobs"});
+        dropTables(stmt, new String[]{"blobs", "clobs", "nclobs", "sqlxmls",
+                                      "nstrings"});
         stmt.executeUpdate("create table blobs (id int, someblob blob)");
         stmt.executeUpdate("create table clobs (id int, someclob clob)");
+        stmt.executeUpdate("create table nclobs (id int, somenclob nclob)");
+        stmt.executeUpdate("create table sqlxmls (id int, somexml xmltype)");
+        stmt.executeUpdate("create table nstrings (id int, somestr varchar2(24), somenstr nvarchar2(24))");
         stmt.close();
         connVJdbc.close();
     }
@@ -93,4 +100,82 @@ public class BlobClobTest extends Oracle9iTest {
         stmtOrig.close();
         stmtVJdbc.close();
     }
+
+    public void testInsertNClobs() throws Exception {
+        StringBuffer sb = new StringBuffer();
+        /*
+         * The upper bound of the loop was originally 1000 which resulted in a clob of about
+         * 8000 bytes. The Thin-Driver doesn't seem to cope with that, it's just possible
+         * to write up to 4k (see http://helma.org/pipermail/helma-user/2004-August/002723.html)
+         */
+        for(int i = 0; i < 100; i++) {
+            sb.append("CLOBDATA");
+        }
+        String nclobdata = sb.toString();
+        PreparedStatement pstmt = _connVJdbc.prepareStatement("insert into nclobs values(?, ?)");
+        for(int i = 1; i <= 10; i++) {
+            pstmt.setInt(1, i);
+            pstmt.setCharacterStream(2, new StringReader(nclobdata), nclobdata.length());
+            pstmt.executeUpdate();
+        }
+        pstmt.close();
+
+        Statement stmtOrig = _connOther.createStatement();
+        Statement stmtVJdbc = _connVJdbc.createStatement();
+        ResultSet rsOrig = stmtOrig.executeQuery("select * from nclobs");
+        ResultSet rsVJdbc = stmtVJdbc.executeQuery("select * from nclobs");
+        compareResultSets(rsOrig, rsVJdbc);
+        stmtOrig.close();
+        stmtVJdbc.close();
+    }
+
+    public void testInsertSQLXMLs() throws Exception {
+        StringBuffer sb = new StringBuffer();
+        /*
+         * The upper bound of the loop was originally 1000 which resulted in a clob of about
+         * 8000 bytes. The Thin-Driver doesn't seem to cope with that, it's just possible
+         * to write up to 4k (see http://helma.org/pipermail/helma-user/2004-August/002723.html)
+         */
+        sb.append("<TEST>");
+        for(int i = 0; i < 100; i++) {
+            sb.append("<LOBDATA />");
+        }
+        sb.append("</TEST>");
+        String nclobdata = sb.toString();
+        PreparedStatement pstmt = _connVJdbc.prepareStatement("insert into sqlxmls values(?, ?)");
+        for(int i = 1; i <= 10; i++) {
+            pstmt.setInt(1, i);
+            pstmt.setCharacterStream(2, new StringReader(nclobdata), nclobdata.length());
+            pstmt.executeUpdate();
+        }
+        pstmt.close();
+
+        Statement stmtOrig = _connOther.createStatement();
+        Statement stmtVJdbc = _connVJdbc.createStatement();
+        ResultSet rsOrig = stmtOrig.executeQuery("select * from sqlxmls");
+        ResultSet rsVJdbc = stmtVJdbc.executeQuery("select * from sqlxmls");
+        compareResultSets(rsOrig, rsVJdbc);
+        stmtOrig.close();
+        stmtVJdbc.close();
+    }
+
+    public void testInsertNStrings() throws Exception {
+        PreparedStatement pstmt = _connVJdbc.prepareStatement("insert into nstrings values(?, ?, ?)");
+        for(int i = 1; i <= 10; i++) {
+            pstmt.setInt(1, i);
+            pstmt.setNString(2, "STRDATA");
+            pstmt.setNString(3, "NSTRDATA");
+            pstmt.executeUpdate();
+        }
+        pstmt.close();
+
+        Statement stmtOrig = _connOther.createStatement();
+        Statement stmtVJdbc = _connVJdbc.createStatement();
+        ResultSet rsOrig = stmtOrig.executeQuery("select * from nstrings");
+        ResultSet rsVJdbc = stmtVJdbc.executeQuery("select * from nstrings");
+        compareResultSets(rsOrig, rsVJdbc);
+        stmtOrig.close();
+        stmtVJdbc.close();
+    }
+
 }

@@ -25,20 +25,34 @@ public class DecoratedCommandSink {
     private Timer _timer;
 
     public DecoratedCommandSink(UIDEx connuid, CommandSink sink, CallingContextFactory ctxFactory) {
+        this(connuid, sink, ctxFactory, 10000l);
+    }
+
+    public DecoratedCommandSink(UIDEx connuid, CommandSink sink, CallingContextFactory ctxFactory, long pingPeriod) {
         _connectionUid = connuid;
         _targetSink = sink;
         _callingContextFactory = ctxFactory;
-        _timer = new Timer(true);
-        
-        // Schedule the keep alive timer task
-        KeepAliveTimerTask task = new KeepAliveTimerTask(this);
-        //TODO: make this configurable
-        _timer.scheduleAtFixedRate(task, 10000, 10000);
+
+        if (pingPeriod > 0) {
+            _timer = new Timer(true);
+
+            // Schedule the keep alive timer task
+            KeepAliveTimerTask task = new KeepAliveTimerTask(this);
+            _timer.scheduleAtFixedRate(task, pingPeriod, pingPeriod);
+        }
     }
-    
+
+    public CommandSink getTargetSink()
+    {
+        return _targetSink;
+    }
+
     public void close() {
         // Stop the keep-alive timer
-        _timer.cancel();
+        if (_timer != null) {
+            _timer.cancel();
+            _timer = null;
+        }
         // Close down the sink
         _targetSink.close();
     }
@@ -58,7 +72,7 @@ public class DecoratedCommandSink {
     public Object process(UIDEx reg, Command cmd) throws SQLException {
         return process(reg, cmd, false);
     }
-    
+
     public Object process(UIDEx reg, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;
@@ -76,7 +90,7 @@ public class DecoratedCommandSink {
     public int processWithIntResult(UIDEx uid, Command cmd) throws SQLException {
         return processWithIntResult(uid, cmd, false);
     }
-    
+
     public int processWithIntResult(UIDEx uid, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;
@@ -94,7 +108,7 @@ public class DecoratedCommandSink {
     public boolean processWithBooleanResult(UIDEx uid, Command cmd) throws SQLException {
         return processWithBooleanResult(uid, cmd, false);
     }
-    
+
     public boolean processWithBooleanResult(UIDEx uid, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;
@@ -112,7 +126,7 @@ public class DecoratedCommandSink {
     public byte processWithByteResult(UIDEx uid, Command cmd) throws SQLException {
         return processWithByteResult(uid, cmd, false);
     }
-    
+
     public byte processWithByteResult(UIDEx uid, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;
@@ -130,7 +144,7 @@ public class DecoratedCommandSink {
     public short processWithShortResult(UIDEx uid, Command cmd) throws SQLException {
         return processWithShortResult(uid, cmd, false);
     }
-    
+
     public short processWithShortResult(UIDEx uid, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;
@@ -148,7 +162,7 @@ public class DecoratedCommandSink {
     public long processWithLongResult(UIDEx uid, Command cmd) throws SQLException {
         return processWithLongResult(uid, cmd, false);
     }
-    
+
     public long processWithLongResult(UIDEx uid, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;
@@ -166,7 +180,7 @@ public class DecoratedCommandSink {
     public float processWithFloatResult(UIDEx uid, Command cmd) throws SQLException {
         return processWithFloatResult(uid, cmd, false);
     }
-    
+
     public float processWithFloatResult(UIDEx uid, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;
@@ -184,7 +198,7 @@ public class DecoratedCommandSink {
     public double processWithDoubleResult(UIDEx uid, Command cmd) throws SQLException {
         return processWithDoubleResult(uid, cmd, false);
     }
-    
+
     public double processWithDoubleResult(UIDEx uid, Command cmd, boolean withCallingContext) throws SQLException {
         try {
             CallingContext ctx = null;

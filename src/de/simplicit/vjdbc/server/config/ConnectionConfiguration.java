@@ -208,7 +208,7 @@ public class ConnectionConfiguration implements Executor {
     public void setConnectionPooling(boolean connectionPooling) {
         _connectionPooling = connectionPooling;
     }
-    
+
     public ConnectionPoolConfiguration getConnectionPoolConfiguration() {
         return _connectionPoolConfiguration;
     }
@@ -251,12 +251,12 @@ public class ConnectionConfiguration implements Executor {
     }
 
     void validate() throws ConfigurationException {
-        if(_driver == null && _url == null && (_dataSourceProvider == null)) {
-            String msg = "Connection-Entry " + _id + ": neither Driver/URL nor DataSourceProvider is provided";
+        if(_url == null && (_dataSourceProvider == null)) {
+            String msg = "Connection-Entry " + _id + ": neither URL nor DataSourceProvider is provided";
             _logger.error(msg);
             throw new ConfigurationException(msg);
         }
-        
+
         // When connection pooling is used, the user/password combination must be
         // provided in the configuration as otherwise user-accounts are mixed up
         if(_dataSourceProvider == null) {
@@ -286,7 +286,9 @@ public class ConnectionConfiguration implements Executor {
         if(_dataSourceProvider != null) {
             _logger.info("  DataSource-Provider ........ " + _dataSourceProvider);
         } else {
-            _logger.info("  Driver ..................... " + _driver);
+            if (_driver != null) {
+                _logger.info("  Driver ..................... " + _driver);
+            }
             _logger.info("  URL ........................ " + _url);
         }
         _logger.info("  User ....................... " + ((_user != null) ? _user : "provided by client"));
@@ -324,7 +326,7 @@ public class ConnectionConfiguration implements Executor {
         }
     }
 
-    private Connection createConnectionViaDataSource() throws SQLException {
+    protected Connection createConnectionViaDataSource() throws SQLException {
         Connection result;
 
         _logger.debug("Creating DataSourceFactory from class " + _dataSourceProvider);
@@ -358,9 +360,9 @@ public class ConnectionConfiguration implements Executor {
         return result;
     }
 
-    private Connection createConnectionViaDriverManager(Properties props) throws SQLException {
+    protected Connection createConnectionViaDriverManager(Properties props) throws SQLException {
         // Try to load the driver
-        if(!_driverInitialized) {
+        if(!_driverInitialized && _driver != null) {
             try {
                 _logger.debug("Loading driver " + _driver);
                 Class.forName(_driver).newInstance();
@@ -439,7 +441,7 @@ public class ConnectionConfiguration implements Executor {
         return DriverManager.getConnection(jdbcurl, props);
     }
 
-    void checkLogin(Properties props) throws VJdbcException {
+    protected void checkLogin(Properties props) throws VJdbcException {
         if(_loginHandler != null) {
             _logger.debug("Trying to login ...");
 

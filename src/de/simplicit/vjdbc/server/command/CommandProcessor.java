@@ -40,7 +40,8 @@ public class CommandProcessor {
 
     private static long s_connectionId = 1;
     private Timer _timer = null;
-    private Map _connectionEntries = Collections.synchronizedMap(new HashMap());
+    private Map<Long, ConnectionEntry> _connectionEntries =
+        Collections.synchronizedMap(new HashMap<Long, ConnectionEntry>());
     private OcctConfiguration _occtConfig;
 
     public static CommandProcessor getInstance() {
@@ -101,6 +102,10 @@ public class CommandProcessor {
         }
     }
 
+    public ConnectionEntry getConnectionEntry(long connid) {
+        return _connectionEntries.get(connid);
+    }
+
     public synchronized UIDEx registerConnection(Connection conn, ConnectionConfiguration config, Properties clientInfo, CallingContext ctx) {
         // To optimize the communication we can tell the client if
         // calling-contexts should be delivered at all
@@ -122,7 +127,7 @@ public class CommandProcessor {
         ArrayList copyOfConnectionEntries = new ArrayList(_connectionEntries.values());
         // and clear the map immediately
         _connectionEntries.clear();
-        
+
         for(Iterator it = copyOfConnectionEntries.iterator(); it.hasNext();) {
             ConnectionEntry connectionEntry = (ConnectionEntry) it.next();
             synchronized(connectionEntry) {
@@ -143,14 +148,15 @@ public class CommandProcessor {
 
         if(connuid != null) {
             // Retrieving connection entry for the UID
-            ConnectionEntry connentry = (ConnectionEntry) _connectionEntries.get(connuid);
+            ConnectionEntry connentry = _connectionEntries.get(connuid);
 
             if(connentry != null) {
                 try {
                     // StatementCancelCommand can be executed asynchronously to terminate
                     // a running query
                     if(cmd instanceof StatementCancelCommand) {
-                        connentry.cancelCurrentStatementExecution(uid);
+                        connentry.cancelCurrentStatementExecution(
+                            connuid, uid, (StatementCancelCommand)cmd);
                     }
                     else {
                         // All other commands must be executed synchronously which is done
@@ -208,12 +214,12 @@ public class CommandProcessor {
         public void run() {
             try {
                 _logger.debug("Checking for orphaned connections ...");
-    
+
                 long millis = System.currentTimeMillis();
 
-                for(Iterator it = _connectionEntries.keySet().iterator(); it.hasNext();) {
-                    Long key = (Long) it.next();
-                    ConnectionEntry connentry = (ConnectionEntry) _connectionEntries.get(key);
+                for(Iterator<Long> it = _connectionEntries.keySet().iterator(); it.hasNext();) {
+                    Long key = it.next();
+                    ConnectionEntry connentry = _connectionEntries.get(key);
 
                     // Synchronize here so that the process-Method doesn't
                     // access the same entry concurrently

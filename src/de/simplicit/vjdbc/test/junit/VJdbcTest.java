@@ -6,20 +6,7 @@ package de.simplicit.vjdbc.test.junit;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Struct;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -67,6 +54,7 @@ public abstract class VJdbcTest extends TestCase {
             throw new SQLException("System-Property VJDBC_CONNECTION_URL not set");
         }
         Connection conn = DriverManager.getConnection(connectionUrl + "#" + getVJdbcDatabaseShortcut(), getVJdbcProperties());
+        //Connection conn = DriverManager.getConnection(connectionUrl, "root", "");
         conn.setAutoCommit(true);
         return conn;
     }
@@ -74,11 +62,11 @@ public abstract class VJdbcTest extends TestCase {
     protected abstract Connection createNativeDatabaseConnection() throws Exception;
 
     protected abstract String getVJdbcDatabaseShortcut();
-    
+
     protected Properties getVJdbcProperties() {
         Properties props = new Properties();
         props.setProperty(VJdbcProperties.CLIENTINFO_PROPERTIES, "user.name;java.version;os.name");
-        
+
         Properties systemProps = System.getProperties();
         for(Enumeration e = systemProps.keys(); e.hasMoreElements();)
         {
@@ -141,12 +129,35 @@ public abstract class VJdbcTest extends TestCase {
 
                         int columnType = rsmeta1.getColumnType(i);
                         switch(columnType) {
+                            case Types.BINARY:
+                                byte[] barr1 = rs1.getBytes(i);
+                                byte[] barr2 = rs2.getBytes(i);
+                                assertEquals(barr1.length, barr2.length);
+                                for (int idx = 0; idx < barr1.length; ++idx) {
+                                    assertEquals(barr1[idx], barr2[idx]);
+                                }
+                                break;
                             case Types.CHAR:
                             case Types.VARCHAR:
                             case Types.LONGVARCHAR:
                                 String str1 = rs1.getString(i);
                                 String str2 = rs2.getString(i);
                                 assertEquals(str1, str2);
+                                assertTrue(Arrays.equals(
+                                        StreamSerializer.toCharArray(rs1.getCharacterStream(i)),
+                                        StreamSerializer.toCharArray(rs2.getCharacterStream(i)))
+                                );
+                                break;
+                            case Types.NCHAR:
+                            case Types.NVARCHAR:
+                            case Types.LONGNVARCHAR:
+                                str1 = rs1.getNString(i);
+                                str2 = rs2.getNString(i);
+                                assertEquals(str1, str2);
+                                assertTrue(Arrays.equals(
+                                        StreamSerializer.toCharArray(rs1.getNCharacterStream(i)),
+                                        StreamSerializer.toCharArray(rs2.getNCharacterStream(i)))
+                                );
                                 break;
                             case Types.ARRAY:
                                 Object[] arr1 = (Object[])rs1.getArray(i).getArray();
@@ -208,6 +219,20 @@ public abstract class VJdbcTest extends TestCase {
                                 );
                                 assertEquals(clob1.getSubString(1, (int)clob1.length()), clob2.getSubString(1, (int)clob2.length()));
                                 break;
+                            case Types.NCLOB:
+                                NClob nclob1 = rs1.getNClob(i);
+                                NClob nclob2 = rs2.getNClob(i);
+                                assertTrue(Arrays.equals(
+                                        StreamSerializer.toCharArray(nclob1.getCharacterStream(), (int)nclob1.length()),
+                                        StreamSerializer.toCharArray(nclob2.getCharacterStream(), (int)nclob2.length()))
+                                );
+                                assertEquals(nclob1.getSubString(1, (int)nclob1.length()), nclob2.getSubString(1, (int)nclob2.length()));
+                                break;
+                            case Types.SQLXML:
+                                SQLXML xml1 = rs1.getSQLXML(i);
+                                SQLXML xml2 = rs2.getSQLXML(i);
+                                assertEquals(xml1.getString(), xml2.getString());
+                                break;
                             default:
                                 if(!obj1.equals(obj2)) {
                                     fail("ResultSets not equal: " + obj1.toString() + " != " + obj2.toString());
@@ -219,7 +244,7 @@ public abstract class VJdbcTest extends TestCase {
                 doLoop = false;
             }
         }
-        
+
         rs1.close();
         rs2.close();
     }
@@ -283,11 +308,11 @@ public abstract class VJdbcTest extends TestCase {
         stmtOra.close();
         stmtVJdbc.close();
     }
-    
+
     protected static void addAllTestMethods(TestSuite suite, Class clazz) throws Exception {
         // First search for an fitting constructor
         Constructor ctor = clazz.getConstructor(new Class[] { String.class });
-        
+
         Method[] methods = clazz.getMethods();
         for (int i = 0; i < methods.length; i++) {
             if(methods[i].getName().startsWith("test") && methods[i].getParameterTypes().length == 0) {

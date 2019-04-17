@@ -24,6 +24,18 @@ public class CallableStatementSetBinaryStreamCommand implements Command {
     public CallableStatementSetBinaryStreamCommand() {
     }
 
+    public CallableStatementSetBinaryStreamCommand(int index, InputStream is) throws IOException {
+        _index = index;
+        _byteArray = StreamSerializer.toByteArray(is);
+        _length = _byteArray.length;
+    }
+
+    public CallableStatementSetBinaryStreamCommand(String paramName, InputStream is) throws IOException {
+        _parameterName = paramName;
+        _byteArray = StreamSerializer.toByteArray(is);
+        _length = _byteArray.length;
+    }
+
     public CallableStatementSetBinaryStreamCommand(int index, InputStream is, int len) throws IOException {
         _index = index;
         _byteArray = StreamSerializer.toByteArray(is);

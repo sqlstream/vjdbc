@@ -18,9 +18,9 @@ import java.sql.*;
 import java.util.Calendar;
 import java.util.Map;
 
-public class StreamingResultSet implements ResultSet, Externalizable {    
+public class StreamingResultSet implements ResultSet, Externalizable {
     static final long serialVersionUID = 8291019975153433161L;
-    
+
     private static Log _logger = LogFactory.getLog(StreamingResultSet.class);
 
     private int[] _columnTypes;
@@ -33,7 +33,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
     private boolean _lastPartReached = true;
     private UIDEx _remainingResultSet = null;
     private SerialResultSetMetaData _metaData = null;
-    
+
     private transient DecoratedCommandSink _commandSink = null;
     private transient int _cursor = -1;
     private transient int _lastReadColumn = 0;
@@ -76,7 +76,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         _lastPartReached = in.readBoolean();
         _remainingResultSet = (UIDEx)in.readObject();
         _metaData = (SerialResultSetMetaData)in.readObject();
-        
+
         _cursor = -1;
     }
 
@@ -98,10 +98,10 @@ public class StreamingResultSet implements ResultSet, Externalizable {
     public void setRemainingResultSetUID(UIDEx reg) {
         _remainingResultSet = reg;
     }
-    
-    public boolean populate(ResultSet rs) throws SQLException {        
+
+    public boolean populate(ResultSet rs) throws SQLException {
         ResultSetMetaData metaData = rs.getMetaData();
-        
+
         // Fetch the meta data immediately if required. Succeeding getMetaData() calls
         // on the ResultSet won't require an additional remote call
         if(_prefetchMetaData) {
@@ -117,7 +117,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         for(int i = 1; i <= columnCount; i++) {
             _columnTypes[i-1] = metaData.getColumnType(i);
             _columnNames[i-1] = metaData.getColumnName(i).toLowerCase();
-            _columnLabels[i-1] = metaData.getColumnLabel(i).toLowerCase(); 
+            _columnLabels[i-1] = metaData.getColumnLabel(i).toLowerCase();
         }
 
         // Create first ResultSet-Part
@@ -126,13 +126,13 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         _rows.populate(rs);
 
         _lastPartReached = _rows.isLastPart();
-        
+
         return _lastPartReached;
     }
 
     public boolean next() throws SQLException {
         boolean result = false;
-        
+
         if(++_cursor < _rows.size()) {
             _actualRow = _rows.get(_cursor);
             result = true;
@@ -150,13 +150,13 @@ public class StreamingResultSet implements ResultSet, Externalizable {
                         _rows.merge(rsp);
                         _actualRow = _rows.get(_cursor);
                         result = true;
-                    } 
+                    }
                 } catch(Exception e) {
                     throw SQLExceptionHelper.wrap(e);
                 }
-            } 
+            }
         }
-        
+
         return result;
     }
 
@@ -903,7 +903,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
                 throw new SQLException("Can't convert type to BigDecimal: " + value.getClass());
             }
         }
-        
+
         return result;
     }
 
@@ -1234,7 +1234,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
     public Blob getBlob(int columnIndex) throws SQLException {
         columnIndex--;
         if(preGetCheckNull(columnIndex)) {
-            return (Blob)_actualRow[columnIndex];            
+            return (Blob)_actualRow[columnIndex];
         }
         else {
             return null;
@@ -1254,7 +1254,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
     public Array getArray(int columnIndex) throws SQLException {
         columnIndex--;
         if(preGetCheckNull(columnIndex)) {
-            return (Array)_actualRow[columnIndex]; 
+            return (Array)_actualRow[columnIndex];
         }
         else {
             return null;
@@ -1285,7 +1285,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         columnIndex--;
         if(preGetCheckNull(columnIndex)) {
             cal.setTime(getDate(columnIndex));
-            return (Date)cal.getTime();            
+            return (Date)cal.getTime();
         }
         else {
             return null;
@@ -1301,7 +1301,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         if(preGetCheckNull(columnIndex)) {
             Time time = (Time)_actualRow[columnIndex];
             cal.setTime(time);
-            return (Time)cal.getTime();            
+            return (Time)cal.getTime();
         }
         else {
             return null;
@@ -1330,7 +1330,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
     public URL getURL(int columnIndex) throws SQLException {
         columnIndex--;
         if(preGetCheckNull(columnIndex)) {
-            return (URL)_actualRow[columnIndex];            
+            return (URL)_actualRow[columnIndex];
         }
         else {
             return null;
@@ -1385,12 +1385,12 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         }
         // not found ? then search in the labels
         if(result < 0) {
-	        for(int i = 0; i < _columnLabels.length; ++i) {
-	            if(_columnLabels[i].equals(nameLowercase)) {
-	                result = i;
-	                break;
-	            }
-	        }
+                for(int i = 0; i < _columnLabels.length; ++i) {
+                    if(_columnLabels[i].equals(nameLowercase)) {
+                        result = i;
+                        break;
+                    }
+                }
         }
         if(result < 0) {
             throw new SQLException("Unknown column " + name);
@@ -1398,7 +1398,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         else {
             _lastReadColumn = result;
         }
-        
+
         return result + 1;
     }
 
@@ -1472,4 +1472,236 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         cal.set(Calendar.MILLISECOND, 0);
         return new Time(cal.getTimeInMillis());
     }
+
+    /* start JDBC4 support */
+    public RowId getRowId(int parameterIndex) throws SQLException {
+        return (RowId)_commandSink.process(_remainingResultSet, CommandPool.getReflectiveCommand(JdbcInterfaceType.RESULTSETHOLDER, "getRowId",
+                new Object[]{new Integer(parameterIndex)},
+                ParameterTypeCombinations.INT));
+    }
+
+    public RowId getRowId(String parameterName) throws SQLException {
+        return (RowId)_commandSink.process(_remainingResultSet, CommandPool.getReflectiveCommand(JdbcInterfaceType.RESULTSETHOLDER, "getRowId",
+                new Object[]{parameterName},
+                ParameterTypeCombinations.STR));
+    }
+
+    public void setRowId(String parameterName, RowId x) throws SQLException {
+        throw new UnsupportedOperationException("setRowId");
+    }
+
+    public void updateRowId(int columnIndex, RowId x) throws SQLException {
+        throw new UnsupportedOperationException("updateRowId");
+    }
+
+    public void updateRowId(String columnLabel, RowId x) throws SQLException {
+        throw new UnsupportedOperationException("updateRowId");
+    }
+
+    public int getHoldability() throws SQLException {
+        return _commandSink.processWithIntResult(_remainingResultSet, CommandPool.getReflectiveCommand(JdbcInterfaceType.RESULTSETHOLDER, "getHoldability"));
+    }
+
+    public boolean isClosed() throws SQLException {
+        return (_cursor < 0);
+    }
+
+    public void updateNString(int columnIndex, String nString) throws SQLException {
+        throw new UnsupportedOperationException("updateNString");
+    }
+
+    public void updateNString(String columnLabel, String nString) throws SQLException {
+        throw new UnsupportedOperationException("updateNString");
+    }
+
+    public void updateNClob(int columnIndex, NClob nClob) throws SQLException {
+        throw new UnsupportedOperationException("updateNClob");
+    }
+
+    public void updateNClob(String columnLabel, NClob nClob) throws SQLException {
+        throw new UnsupportedOperationException("updateNClob");
+    }
+
+    public NClob getNClob(int columnIndex) throws SQLException {
+        columnIndex--;
+        if(preGetCheckNull(columnIndex)) {
+            return (NClob)_actualRow[columnIndex];
+        }
+        else {
+            return null;
+        }
+    }
+
+    public NClob getNClob(String columnLabel) throws SQLException {
+        return getNClob(getIndexForName(columnLabel));
+    }
+
+    public SQLXML getSQLXML(int columnIndex) throws SQLException {
+        columnIndex--;
+        if(preGetCheckNull(columnIndex)) {
+            return (SQLXML)_actualRow[columnIndex];
+        }
+        else {
+            return null;
+        }
+    }
+
+    public SQLXML getSQLXML(String columnLabel) throws SQLException {
+        return getSQLXML(getIndexForName(columnLabel));
+    }
+
+    public void updateSQLXML(int columnIndex, SQLXML xmlObject) throws SQLException {
+        throw new UnsupportedOperationException("updateSQLXML");
+    }
+
+    public void updateSQLXML(String columnLabel, SQLXML xmlObject) throws SQLException {
+        throw new UnsupportedOperationException("updateSQLXML");
+    }
+
+    public String getNString(int columnIndex) throws SQLException {
+        columnIndex--;
+        if(preGetCheckNull(columnIndex)) {
+            return _actualRow[columnIndex].toString();
+        } else {
+            return null;
+        }
+    }
+
+    public String getNString(String columnLabel) throws SQLException {
+        return getNString(getIndexForName(columnLabel));
+    }
+
+    public Reader getNCharacterStream(int columnIndex) throws SQLException {
+        columnIndex--;
+        if(preGetCheckNull(columnIndex)) {
+            return new StringReader((String)_actualRow[columnIndex]);
+        }
+        else {
+            return null;
+        }
+    }
+
+    public Reader getNCharacterStream(String columnLabel) throws SQLException {
+        return getNCharacterStream(getIndexForName(columnLabel));
+    }
+
+    public void updateNCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateNCharacterStream");
+    }
+
+    public void updateNCharacterStream(String columnLabel, Reader x, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateNCharacterStream");
+    }
+
+    public void updateAsciiStream(int columnIndex, InputStream x, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateAsciiStream");
+    }
+
+    public void updateBinaryStream(int columnIndex, InputStream x, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateBinaryStream");
+    }
+
+    public void updateCharacterStream(int columnIndex, Reader x, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateCharacterStream");
+    }
+
+    public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateAsciiStream");
+    }
+
+    public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateBinaryStream");
+    }
+
+    public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateCharacterStream");
+    }
+
+    public void updateBlob(int columnIndex, InputStream inputStream, long length) throws SQLException {
+    }
+
+    public void updateBlob(String columnLabel, InputStream inputStream, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateBlob");
+    }
+
+    public void updateClob(int columnIndex, Reader reader, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateClob");
+    }
+
+    public void updateClob(String columnLabel, Reader reader, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateClob");
+    }
+
+    public void updateNClob(int columnIndex, Reader reader, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateNClob");
+    }
+
+    public void updateNClob(String columnLabel, Reader reader, long length) throws SQLException {
+        throw new UnsupportedOperationException("updateNClob");
+    }
+
+    public void updateNCharacterStream(int columnIndex, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateNCharacterStream");
+    }
+
+    public void updateNCharacterStream(String columnLabel, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateNCharacterStream");
+    }
+
+    public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
+        throw new UnsupportedOperationException("updateAsciiStream");
+    }
+
+    public void updateBinaryStream(int columnIndex, InputStream x) throws SQLException {
+        throw new UnsupportedOperationException("updateBinaryStream");
+    }
+
+    public void updateCharacterStream(int columnIndex, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateCharacterStream");
+    }
+
+    public void updateCharacterStream(String columnLabel, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateCharacterStream");
+    }
+
+    public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
+        throw new UnsupportedOperationException("updateAsciiStream");
+    }
+
+    public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
+        throw new UnsupportedOperationException("updateBinaryStream");
+    }
+
+    public void updateBlob(int columnIndex, InputStream inputStream) throws SQLException {
+        throw new UnsupportedOperationException("updateBlob");
+    }
+
+    public void updateBlob(String columnLabel, InputStream inputStream) throws SQLException {
+        throw new UnsupportedOperationException("updateBlob");
+    }
+
+    public void updateClob(int columnIndex, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateClob");
+    }
+
+    public void updateClob(String columnLabel, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateClob");
+    }
+
+    public void updateNClob(int columnIndex, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateNClob");
+    }
+
+    public void updateNClob(String columnLabel, Reader reader) throws SQLException {
+        throw new UnsupportedOperationException("updateNClob");
+    }
+
+    public boolean isWrapperFor(Class<?> iface) throws SQLException {
+        return iface.isAssignableFrom(StreamingResultSet.class);
+    }
+
+    public <T> T unwrap(Class<T> iface) throws SQLException {
+        return (T)this;
+    }
+    /* end JDBC4 support */
 }

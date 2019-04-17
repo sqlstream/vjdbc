@@ -4,6 +4,7 @@
 
 package de.simplicit.vjdbc.server.command;
 
+import de.simplicit.vjdbc.ProxiedObject;
 import de.simplicit.vjdbc.serial.UIDEx;
 import de.simplicit.vjdbc.util.JavaVersionInfo;
 
@@ -17,8 +18,11 @@ import java.sql.Statement;
  * be put into the object pool with a UID.
  */
 class ReturnedObjectGuard {
+
     public static UIDEx checkResult(Object obj) {
-        if(obj instanceof Statement) {
+        if (obj instanceof ProxiedObject) {
+            return ((ProxiedObject)obj).getUID();
+        } else if(obj instanceof Statement) {
             try {
                 Statement stmt = (Statement)obj;
                 return new UIDEx(stmt.getQueryTimeout(), stmt.getMaxRows());

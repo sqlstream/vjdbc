@@ -20,24 +20,24 @@ public class Oracle9iTest extends VJdbcTest {
     }
 
     protected Connection createNativeDatabaseConnection() throws SQLException {
-        return DriverManager.getConnection("jdbc:oracle:thin:@mikepc:1521:orcl", "system", "system");
+        return DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:ORCL", "scott", "tiger");
     }
 
     protected String getVJdbcDatabaseShortcut() {
         return "OracleDB";
     }
 
-	protected String getVJdbcPassword() {
-		return "vjdbc";
-	}
+        protected String getVJdbcPassword() {
+                return "vjdbc";
+        }
 
-	protected String getVJdbcUser() {
-		return "vjdbc";
-	}
+        protected String getVJdbcUser() {
+                return "vjdbc";
+        }
 
-	protected void oneTimeSetup() throws Exception {
+        protected void oneTimeSetup() throws Exception {
         super.oneTimeSetup();
-        
+
         Class.forName("oracle.jdbc.OracleDriver");
     }
 
