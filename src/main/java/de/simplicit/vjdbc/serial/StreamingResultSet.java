@@ -7,6 +7,7 @@ package de.simplicit.vjdbc.serial;
 import de.simplicit.vjdbc.command.*;
 import de.simplicit.vjdbc.util.JavaVersionInfo;
 import de.simplicit.vjdbc.util.SQLExceptionHelper;
+import de.simplicit.vjdbc.VirtualStatement;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -170,6 +171,9 @@ public class StreamingResultSet implements ResultSet, Externalizable {
                 _commandSink.process(_remainingResultSet, new DestroyCommand(_remainingResultSet, JdbcInterfaceType.RESULTSETHOLDER));
             }
             _remainingResultSet = null;
+        }
+        if (((VirtualStatement)_statement).isCloseOnCompletion()) {
+            _statement.close();
         }
     }
 
@@ -1263,6 +1267,14 @@ public class StreamingResultSet implements ResultSet, Externalizable {
 
     public Object getObject(String colName, Map map) throws SQLException {
         throw new UnsupportedOperationException("getObject");
+    }
+
+    public <T> T getObject(String columnName, Class<T> clazz) {
+        throw new UnsupportedOperationException("getObject(String, Class)");
+    }
+
+    public <T> T getObject(int columnIndex, Class<T> clazz) {
+        throw new UnsupportedOperationException("getObject(int, Class)");
     }
 
     public Ref getRef(String colName) throws SQLException {
