@@ -1,4 +1,5 @@
 .svn
+target/
 builddir/vjdbc*
 builddir/websiet
 
