@@ -10,12 +10,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.digester.Digester;
 import org.apache.commons.digester.substitution.MultiVariableExpander;
 import org.apache.commons.digester.substitution.VariableSubstitutor;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.xml.sax.SAXException;
 
 /**
@@ -23,7 +23,7 @@ import org.xml.sax.SAXException;
  * or be built up programmatically.
  */
 public class VJdbcConfiguration {
-    private static Log _logger = LogFactory.getLog(VJdbcConfiguration.class);
+    private static Logger _logger = Logger.getLogger(VJdbcConfiguration.class.getName());
     private static VJdbcConfiguration _singleton;
 
     private OcctConfiguration _occtConfiguration = new OcctConfiguration();
@@ -53,7 +53,7 @@ public class VJdbcConfiguration {
      */
     public static void init(VJdbcConfiguration customConfig) {
         if(_singleton != null) {
-            _logger.warn("VJdbcConfiguration already initialized, init-Call is ignored");
+            _logger.warning("VJdbcConfiguration already initialized, init-Call is ignored");
         } else {
             _singleton = customConfig;
         }
@@ -75,16 +75,16 @@ public class VJdbcConfiguration {
      */
     public static void init(String configResource, Properties configVariables) throws ConfigurationException {
         if(_singleton != null) {
-            _logger.warn("VJdbcConfiguration already initialized, init-Call is ignored");
+            _logger.warning("VJdbcConfiguration already initialized, init-Call is ignored");
         } else {
             try {
                 _singleton = new VJdbcConfiguration(configResource, configVariables);
-                if(_logger.isInfoEnabled()) {
+                if(_logger.isLoggable(Level.INFO)) {
                     _singleton.log();
                 }
             } catch(Exception e) {
                 String msg = "VJdbc-Configuration failed";
-                _logger.error(msg, e);
+                _logger.log(Level.SEVERE, msg, e);
                 throw new ConfigurationException(msg, e);
             }
         }
@@ -97,16 +97,16 @@ public class VJdbcConfiguration {
      */
     public static void init(InputStream configResourceInputStream, Properties configVariables) throws ConfigurationException {
         if(_singleton != null) {
-            _logger.warn("VJdbcConfiguration already initialized, init-Call is ignored");
+            _logger.warning("VJdbcConfiguration already initialized, init-Call is ignored");
         } else {
             try {
                 _singleton = new VJdbcConfiguration(configResourceInputStream, configVariables);
-                if(_logger.isInfoEnabled()) {
+                if(_logger.isLoggable(Level.INFO)) {
                     _singleton.log();
                 }
             } catch(Exception e) {
                 String msg = "VJdbc-Configuration failed";
-                _logger.error(msg, e);
+                _logger.log(Level.SEVERE, msg, e);
                 throw new ConfigurationException(msg, e);
             }
         }
@@ -180,7 +180,7 @@ public class VJdbcConfiguration {
             _connections.add(connectionConfiguration);
         } else {
             String msg = "Connection configuration for " + connectionConfiguration.getId() + " already exists";
-            _logger.error(msg);
+            _logger.severe(msg);
             throw new ConfigurationException(msg);
         }
     }

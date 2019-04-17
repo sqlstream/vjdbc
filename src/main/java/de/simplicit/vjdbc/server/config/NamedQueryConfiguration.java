@@ -4,16 +4,14 @@
 
 package de.simplicit.vjdbc.server.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class NamedQueryConfiguration {
-    private static Log _logger = LogFactory.getLog(NamedQueryConfiguration.class);
+    private static Logger _logger = Logger.getLogger(NamedQueryConfiguration.class.getName());
     private Map _queryMap = new HashMap();
 
     public Map getQueryMap() {
@@ -31,7 +29,7 @@ public class NamedQueryConfiguration {
         }
         else {
             String msg = "Named-Query for key '" + id + "' not found";
-            _logger.error(msg);
+            _logger.severe(msg);
             throw new SQLException(msg);
         }
     }

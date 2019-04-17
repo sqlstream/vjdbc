@@ -4,7 +4,7 @@
   <groupId>de.simplicit</groupId>
   <artifactId>vjdbc</artifactId>
   <packaging>jar</packaging>
-  <version>1.7.1</version>
+  <version>1.7.2-sqlstream</version>
   <name>VJDBC JDBC driver</name>
   <url>http://vjdbc.sourceforge.net/</url>
 
@@ -315,11 +315,12 @@
       <artifactId>commons-httpclient</artifactId>
       <version>3.0.1</version>
     </dependency>
-<!--    <dependency>
+    <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
       <version>1.1</version>
-    </dependency> -->
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>commons-pool</groupId>
       <artifactId>commons-pool</artifactId>
@@ -336,11 +337,6 @@
       <artifactId>junit</artifactId>
       <version>4.1</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>1.2.8</version>
     </dependency>
     <dependency>
       <groupId>org.glassfish</groupId>

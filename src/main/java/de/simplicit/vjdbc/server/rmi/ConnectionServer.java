@@ -4,12 +4,6 @@
 
 package de.simplicit.vjdbc.server.rmi;
 
-import de.simplicit.vjdbc.rmi.SecureSocketFactory;
-import de.simplicit.vjdbc.server.config.RmiConfiguration;
-import de.simplicit.vjdbc.server.config.VJdbcConfiguration;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.rmi.NotBoundException;
@@ -18,9 +12,15 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.RMISocketFactory;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import de.simplicit.vjdbc.rmi.SecureSocketFactory;
+import de.simplicit.vjdbc.server.config.RmiConfiguration;
+import de.simplicit.vjdbc.server.config.VJdbcConfiguration;
 
 public class ConnectionServer {
-    private static Log _logger = LogFactory.getLog(ConnectionServer.class);
+    private static Logger _logger = Logger.getLogger(ConnectionServer.class.getName());
 
     private RmiConfiguration _rmiConfiguration;
     private Registry _registry;
@@ -50,7 +50,7 @@ public class ConnectionServer {
             ConnectionServer connectionServer = new ConnectionServer();
             connectionServer.serve();
         } catch (Throwable e) {
-            _logger.error(e.getMessage(), e);
+            _logger.log(Level.SEVERE, e.getMessage(), e);
         }
     }
 
@@ -61,7 +61,7 @@ public class ConnectionServer {
         _rmiConfiguration = VJdbcConfiguration.singleton().getRmiConfiguration();
 
         if(_rmiConfiguration == null) {
-            _logger.debug("No RMI-Configuration specified in VJdbc-Configuration, using default configuration");
+            _logger.fine("No RMI-Configuration specified in VJdbc-Configuration, using default configuration");
             _rmiConfiguration = new RmiConfiguration();
         }
 
@@ -92,9 +92,9 @@ public class ConnectionServer {
                     _logger.info("Unbinding remote object");
                     _registry.unbind(_rmiConfiguration.getObjectName());
                 } catch (RemoteException e) {
-                    _logger.error("Remote exception", e);
+                    _logger.log(Level.SEVERE, "Remote exception", e);
                 } catch (NotBoundException e) {
-                    _logger.error("Not bound exception", e);
+                    _logger.log(Level.SEVERE, "Not bound exception", e);
                 }
             }
         }));

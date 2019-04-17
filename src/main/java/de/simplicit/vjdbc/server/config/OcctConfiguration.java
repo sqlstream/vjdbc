@@ -4,14 +4,13 @@
 
 package de.simplicit.vjdbc.server.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.util.logging.Logger;
 
 /**
  * This class holds configuration information for the OCCT.
  */
 public class OcctConfiguration {
-    private static Log _logger = LogFactory.getLog(OcctConfiguration.class);
+    private static Logger _logger = Logger.getLogger(OcctConfiguration.class.getName());
 
     private long _checkingPeriod = 30000;
     private long _timeout = 120000;
@@ -25,7 +24,7 @@ public class OcctConfiguration {
 
     public void setCheckingPeriodInMillis(long checkingPeriod) {
         if(checkingPeriod != 0 && checkingPeriod <= 1000) {
-            _logger.error("Checking-Period must be greater than 1 second");
+            _logger.severe("Checking-Period must be greater than 1 second");
         }
         else {
             _checkingPeriod = checkingPeriod;
@@ -38,7 +37,7 @@ public class OcctConfiguration {
 
     public void setTimeoutInMillis(long timeout) {
         if(timeout > 0 && timeout <= 1000) {
-            _logger.error("Timeout must be greater than 1 second " + timeout);
+            _logger.severe("Timeout must be greater than 1 second " + timeout);
         }
         else {
             _timeout = timeout;

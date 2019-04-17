@@ -4,11 +4,10 @@
 
 package de.simplicit.vjdbc.server.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.util.logging.Logger;
 
 public class RmiConfiguration {
-    private static Log _logger = LogFactory.getLog(RmiConfiguration.class);
+    private static Logger _logger = Logger.getLogger(RmiConfiguration.class.getName());
 
     protected String _objectName = "VJdbc";
     protected int _registryPort = 2000;

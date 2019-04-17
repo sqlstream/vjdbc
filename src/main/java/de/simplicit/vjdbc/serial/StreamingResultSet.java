@@ -4,25 +4,52 @@
 
 package de.simplicit.vjdbc.serial;
 
-import de.simplicit.vjdbc.command.*;
-import de.simplicit.vjdbc.util.JavaVersionInfo;
-import de.simplicit.vjdbc.util.SQLExceptionHelper;
-import de.simplicit.vjdbc.VirtualStatement;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.logging.Logger;
+
+import de.simplicit.vjdbc.VirtualStatement;
+import de.simplicit.vjdbc.command.CommandPool;
+import de.simplicit.vjdbc.command.DecoratedCommandSink;
+import de.simplicit.vjdbc.command.DestroyCommand;
+import de.simplicit.vjdbc.command.JdbcInterfaceType;
+import de.simplicit.vjdbc.command.NextRowPacketCommand;
+import de.simplicit.vjdbc.command.ParameterTypeCombinations;
+import de.simplicit.vjdbc.command.ResultSetGetMetaDataCommand;
+import de.simplicit.vjdbc.util.JavaVersionInfo;
+import de.simplicit.vjdbc.util.SQLExceptionHelper;
 
 public class StreamingResultSet implements ResultSet, Externalizable {
     static final long serialVersionUID = 8291019975153433161L;
 
-    private static Log _logger = LogFactory.getLog(StreamingResultSet.class);
+    private static Logger _logger = Logger.getLogger(StreamingResultSet.class.getName());
 
     private int[] _columnTypes;
     private String[] _columnNames;
@@ -106,7 +133,7 @@ public class StreamingResultSet implements ResultSet, Externalizable {
         // Fetch the meta data immediately if required. Succeeding getMetaData() calls
         // on the ResultSet won't require an additional remote call
         if(_prefetchMetaData) {
-            _logger.debug("Fetching MetaData of ResultSet");
+            _logger.fine("Fetching MetaData of ResultSet");
             _metaData = new SerialResultSetMetaData(metaData);
         }
 

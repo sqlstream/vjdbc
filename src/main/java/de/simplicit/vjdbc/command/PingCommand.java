@@ -4,18 +4,16 @@
 
 package de.simplicit.vjdbc.command;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.sql.SQLException;
+import java.util.logging.Logger;
 
 public class PingCommand implements Command {
     static final long serialVersionUID = 3340327873423851L;
 
-    private static Log _logger = LogFactory.getLog(PingCommand.class);
+    private static Logger _logger = Logger.getLogger(PingCommand.class.getName());
 
     public PingCommand() {
     }
@@ -27,9 +25,7 @@ public class PingCommand implements Command {
     }
 
     public Object execute(Object target, ConnectionContext ctx) throws SQLException {
-        if(_logger.isDebugEnabled()) {
-            _logger.debug("Keep alive ping ...");
-        }
+        _logger.fine("Keep alive ping ...");
         return null;
     }
 

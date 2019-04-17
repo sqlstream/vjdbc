@@ -4,6 +4,22 @@
 
 package de.simplicit.vjdbc.server.config;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.Deflater;
+
+import javax.sql.DataSource;
+
+import org.apache.commons.dbcp.ConnectionFactory;
+import org.apache.commons.dbcp.DriverManagerConnectionFactory;
+import org.apache.commons.dbcp.PoolableConnectionFactory;
+import org.apache.commons.dbcp.PoolingDriver;
+import org.apache.commons.pool.impl.GenericObjectPool;
+
 import de.simplicit.vjdbc.VJdbcException;
 import de.simplicit.vjdbc.VJdbcProperties;
 import de.simplicit.vjdbc.server.DataSourceProvider;
@@ -11,23 +27,8 @@ import de.simplicit.vjdbc.server.LoginHandler;
 import de.simplicit.vjdbc.server.concurrent.Executor;
 import de.simplicit.vjdbc.server.concurrent.PooledExecutor;
 
-import org.apache.commons.dbcp.ConnectionFactory;
-import org.apache.commons.dbcp.DriverManagerConnectionFactory;
-import org.apache.commons.dbcp.PoolableConnectionFactory;
-import org.apache.commons.dbcp.PoolingDriver;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.pool.impl.GenericObjectPool;
-
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Properties;
-import java.util.zip.Deflater;
-
 public class ConnectionConfiguration implements Executor {
-    private static Log _logger = LogFactory.getLog(ConnectionConfiguration.class);
+    private static Logger _logger = Logger.getLogger(ConnectionConfiguration.class.getName());
     private static final String DBCP_ID = "jdbc:apache:commons:dbcp:";
 
     // Basic properties
@@ -253,7 +254,7 @@ public class ConnectionConfiguration implements Executor {
     void validate() throws ConfigurationException {
         if(_url == null && (_dataSourceProvider == null)) {
             String msg = "Connection-Entry " + _id + ": neither URL nor DataSourceProvider is provided";
-            _logger.error(msg);
+            _logger.severe(msg);
             throw new ConfigurationException(msg);
         }
 
@@ -262,7 +263,7 @@ public class ConnectionConfiguration implements Executor {
         if(_dataSourceProvider == null) {
             if(_connectionPooling && _user == null) {
                 String msg = "Connection-Entry " + _id + ": connection pooling can only be used when a dedicated user is specified for the connection";
-                _logger.error(msg);
+                _logger.severe(msg);
                 throw new ConfigurationException(msg);
             }
         }
@@ -329,31 +330,31 @@ public class ConnectionConfiguration implements Executor {
     protected Connection createConnectionViaDataSource() throws SQLException {
         Connection result;
 
-        _logger.debug("Creating DataSourceFactory from class " + _dataSourceProvider);
+        _logger.fine("Creating DataSourceFactory from class " + _dataSourceProvider);
 
         try {
             Class clsDataSourceProvider = Class.forName(_dataSourceProvider);
             DataSourceProvider dataSourceProvider = (DataSourceProvider) clsDataSourceProvider.newInstance();
-            _logger.debug("DataSourceProvider created");
+            _logger.fine("DataSourceProvider created");
             DataSource dataSource = dataSourceProvider.getDataSource();
-            _logger.debug("Retrieving connection from DataSource");
+            _logger.fine("Retrieving connection from DataSource");
             if(_user != null) {
                 result = dataSource.getConnection(_user, _password);
             } else {
                 result = dataSource.getConnection();
             }
-            _logger.debug("... Connection successfully retrieved");
+            _logger.fine("... Connection successfully retrieved");
         } catch (ClassNotFoundException e) {
             String msg = "DataSourceProvider-Class " + _dataSourceProvider + " not found";
-            _logger.error(msg, e);
+            _logger.log(Level.SEVERE, msg, e);
             throw new SQLException(msg);
         } catch (InstantiationException e) {
             String msg = "Failed to create DataSourceProvider";
-            _logger.error(msg, e);
+            _logger.log(Level.SEVERE, msg, e);
             throw new SQLException(msg);
         } catch (IllegalAccessException e) {
             String msg = "Can't access DataSourceProvider";
-            _logger.error(msg, e);
+            _logger.log(Level.SEVERE, msg, e);
             throw new SQLException(msg);
         }
 
@@ -364,12 +365,12 @@ public class ConnectionConfiguration implements Executor {
         // Try to load the driver
         if(!_driverInitialized && _driver != null) {
             try {
-                _logger.debug("Loading driver " + _driver);
+                _logger.fine("Loading driver " + _driver);
                 Class.forName(_driver).newInstance();
-                _logger.debug("... successful");
+                _logger.fine("... successful");
             } catch (Exception e) {
                 String msg = "Loading of driver " + _driver + " failed";
-                _logger.error(msg, e);
+                _logger.log(Level.SEVERE, msg, e);
                 throw new SQLException(msg);
             }
             _driverInitialized = true;
@@ -378,22 +379,22 @@ public class ConnectionConfiguration implements Executor {
         // When database login is provided use them for the login instead of the
         // ones provided by the client
         if(_user != null) {
-            _logger.debug("Using " + _user + " for database-login");
+            _logger.fine("Using " + _user + " for database-login");
             props.put("user", _user);
             if(_password != null) {
                 props.put("password", _password);
             } else {
-                _logger.warn("No password was provided for database-login " + _user);
+                _logger.warning("No password was provided for database-login " + _user);
             }
         }
 
         String jdbcurl = _url;
 
         if(jdbcurl.length() > 0) {
-            _logger.debug("JDBC-Connection-String: " + jdbcurl);
+            _logger.fine("JDBC-Connection-String: " + jdbcurl);
         } else {
             String msg = "No JDBC-Connection-String available";
-            _logger.error(msg);
+            _logger.severe(msg);
             throw new SQLException(msg);
         }
 
@@ -429,11 +430,11 @@ public class ConnectionConfiguration implements Executor {
                     driver.registerPool(_id, _connectionPool);
                     _connectionPoolInitialized = Boolean.TRUE;
                     jdbcurl = dbcpId;
-                    _logger.debug("Connection-Pooling successfully initialized for connection " + _id);
+                    _logger.fine("Connection-Pooling successfully initialized for connection " + _id);
                 } catch (ClassNotFoundException e) {
                     _connectionPool = null;
                     _connectionPoolInitialized = null;
-                    _logger.error("Jakarta-DBCP-Driver not found, switching it off for connection " + _id, e);
+                    _logger.log(Level.SEVERE, "Jakarta-DBCP-Driver not found, switching it off for connection " + _id, e);
                 }
             }
         }
@@ -443,7 +444,7 @@ public class ConnectionConfiguration implements Executor {
 
     protected void checkLogin(Properties props) throws VJdbcException {
         if(_loginHandler != null) {
-            _logger.debug("Trying to login ...");
+            _logger.fine("Trying to login ...");
 
             if(_loginHandlerInstance == null) {
                 try {
@@ -451,15 +452,15 @@ public class ConnectionConfiguration implements Executor {
                     _loginHandlerInstance = (LoginHandler) loginHandlerClazz.newInstance();
                 } catch (ClassNotFoundException e) {
                     String msg = "Login-Handler class not found";
-                    _logger.error(msg, e);
+                    _logger.log(Level.SEVERE, msg, e);
                     throw new VJdbcException(msg, e);
                 } catch (InstantiationException e) {
                     String msg = "Error creating instance of Login-Handler class";
-                    _logger.error(msg, e);
+                    _logger.log(Level.SEVERE, msg, e);
                     throw new VJdbcException(msg, e);
                 } catch (IllegalAccessException e) {
                     String msg = "Error creating instance of Login-Handler class";
-                    _logger.error(msg, e);
+                    _logger.log(Level.SEVERE, msg, e);
                     throw new VJdbcException(msg, e);
                 }
             }
@@ -468,16 +469,16 @@ public class ConnectionConfiguration implements Executor {
             String loginPassword = props.getProperty(VJdbcProperties.LOGIN_PASSWORD);
 
             if(loginUser == null) {
-                _logger.warn("Property vjdbc.login.user is not set, " + "the login-handler might not be satisfied");
+                _logger.warning("Property vjdbc.login.user is not set, " + "the login-handler might not be satisfied");
             }
 
             if(loginPassword == null) {
-                _logger.warn("Property vjdbc.login.password is not set, " + "the login-handler might not be satisfied");
+                _logger.warning("Property vjdbc.login.password is not set, " + "the login-handler might not be satisfied");
             }
 
             _loginHandlerInstance.checkLogin(loginUser, loginPassword);
 
-            _logger.debug("... successful");
+            _logger.fine("... successful");
         }
     }
 

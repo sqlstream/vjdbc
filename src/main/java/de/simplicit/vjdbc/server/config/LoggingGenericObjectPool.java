@@ -4,8 +4,9 @@
 
 package de.simplicit.vjdbc.server.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.apache.commons.pool.impl.GenericObjectPool;
 
 /**
@@ -14,7 +15,7 @@ import org.apache.commons.pool.impl.GenericObjectPool;
  * @author Mike
  */
 public class LoggingGenericObjectPool extends GenericObjectPool {
-    private static Log _logger = LogFactory.getLog(LoggingGenericObjectPool.class);
+    private static Logger _logger = Logger.getLogger(LoggingGenericObjectPool.class.getName());
     
     private String _idOfConnection;
 
@@ -30,8 +31,8 @@ public class LoggingGenericObjectPool extends GenericObjectPool {
         
     public synchronized void evict() throws Exception {
         super.evict();
-        if(_logger.isDebugEnabled()) {
-            _logger.debug("DBCP-Evictor: number of idle connections in '" + _idOfConnection + "' = " + getNumIdle());
+        if(_logger.isLoggable(Level.FINE)) {
+            _logger.fine("DBCP-Evictor: number of idle connections in '" + _idOfConnection + "' = " + getNumIdle());
         }
     }
 }

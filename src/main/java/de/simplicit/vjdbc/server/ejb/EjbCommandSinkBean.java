@@ -4,26 +4,28 @@
 
 package de.simplicit.vjdbc.server.ejb;
 
+import java.sql.SQLException;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.ejb.Remote;
+import javax.ejb.Stateless;
+
 import de.simplicit.vjdbc.command.Command;
+import de.simplicit.vjdbc.ejb.EjbCommandSink;
+import de.simplicit.vjdbc.ejb.EjbCommandSinkProxy;
 import de.simplicit.vjdbc.serial.CallingContext;
 import de.simplicit.vjdbc.serial.UIDEx;
 import de.simplicit.vjdbc.server.command.CommandProcessor;
-import de.simplicit.vjdbc.ejb.*;
 import de.simplicit.vjdbc.util.SQLExceptionHelper;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import javax.ejb.*;
-import java.sql.SQLException;
-import java.util.Properties;
 
 @Stateless
 @Remote
 public class EjbCommandSinkBean
     implements EjbCommandSink, EjbCommandSinkProxy {
 
-    private static Log _logger = LogFactory.getLog(EjbCommandSinkBean.class);
+    private static Logger _logger = Logger.getLogger(EjbCommandSinkBean.class.getName());
 
     private transient CommandProcessor _processor;
 
@@ -39,7 +41,7 @@ public class EjbCommandSinkBean
                 _processor.createConnection(url, props, clientInfo, ctx);
             return reg;
         } catch (Exception e) {
-            _logger.error(url, e);
+            _logger.log(Level.SEVERE, url, e);
             throw SQLExceptionHelper.wrap(e);
         }
     }

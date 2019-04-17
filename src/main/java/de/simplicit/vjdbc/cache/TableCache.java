@@ -4,14 +4,27 @@
 
 package de.simplicit.vjdbc.cache;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class TableCache extends TimerTask {
-    private static Log _logger = LogFactory.getLog(TableCache.class);
+    private static Logger _logger = Logger.getLogger(TableCache.class.getName());
 
     private static Map _sqlTypeMappingForHSql = new HashMap();
 
@@ -118,7 +131,7 @@ public class TableCache extends TimerTask {
         }
 
         if(cachingPossible) {
-        	_logger.debug("Returning prepared statement from HSQL for query " +sql);
+        	_logger.fine("Returning prepared statement from HSQL for query " +sql);
             return _hsqlConnection.prepareStatement(sql);
         } else {
             return null;
@@ -155,7 +168,7 @@ public class TableCache extends TimerTask {
             cacheEntry._isFilled = true;
         } catch(SQLException e) {
             // Remove the entry when an exception occurs
-            _logger.warn("Error while refreshing table " + cacheEntry._name + ", dropping it");
+            _logger.warning("Error while refreshing table " + cacheEntry._name + ", dropping it");
             _hsqlStatement.executeUpdate(cacheEntry._drop);
             cacheEntry._isFilled = false;
             throw e;
@@ -251,11 +264,11 @@ public class TableCache extends TimerTask {
                 // Now measure if the cache should be refreshed
                 if((System.currentTimeMillis() - tableEntry._lastTimeRefreshed) > tableEntry._refreshInterval) {
                     try {
-                        _logger.debug("Refreshing cache for table " + tableEntry._name);
+                        _logger.fine("Refreshing cache for table " + tableEntry._name);
                         refreshCacheEntry(tableEntry);
-                        _logger.debug("... successfully refreshed");
+                        _logger.fine("... successfully refreshed");
                     } catch(SQLException e) {
-                        _logger.warn("... failed", e);
+                        _logger.log(Level.WARNING, "... failed", e);
                     }
                 }
             }

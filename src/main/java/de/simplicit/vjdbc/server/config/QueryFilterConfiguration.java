@@ -4,17 +4,21 @@
 
 package de.simplicit.vjdbc.server.config;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.oro.text.regex.*;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.apache.oro.text.regex.MalformedPatternException;
+import org.apache.oro.text.regex.Pattern;
+import org.apache.oro.text.regex.PatternCompiler;
+import org.apache.oro.text.regex.Perl5Compiler;
+import org.apache.oro.text.regex.Perl5Matcher;
 
 public class QueryFilterConfiguration {
-    private static Log _logger = LogFactory.getLog(QueryFilterConfiguration.class);
+    private static Logger _logger = Logger.getLogger(QueryFilterConfiguration.class.getName());
     private List _filters = new ArrayList();
     private Perl5Matcher _matcher = new Perl5Matcher();
 
@@ -61,12 +65,12 @@ public class QueryFilterConfiguration {
                 if(matched) {
                     if(filter._isDenyFilter) {
                         String msg = "SQL [" + sql + "] is denied due to Deny-Filter [" + filter._regExp + "]";
-                        _logger.warn(msg);
+                        _logger.warning(msg);
                         throw new SQLException(msg);
                     } else {
-                        if(_logger.isDebugEnabled()) {
+                        if(_logger.isLoggable(Level.FINE)) {
                             String msg = "SQL [" + sql + "] is allowed due to Allow-Filter [" + filter._regExp + "]";
-                            _logger.debug(msg);
+                            _logger.fine(msg);
                         }
                         return;
                     }
@@ -74,7 +78,7 @@ public class QueryFilterConfiguration {
             }
             
             String msg = "SQL [" + sql + "] didn't match any query filter and won't be executed";
-            _logger.error(msg);
+            _logger.severe(msg);
             throw new SQLException(msg);
         }
     }

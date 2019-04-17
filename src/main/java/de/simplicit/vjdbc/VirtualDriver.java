@@ -13,21 +13,17 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
-import javax.rmi.PortableRemoteObject;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import de.simplicit.vjdbc.command.CallingContextFactory;
 import de.simplicit.vjdbc.command.CommandSink;
 import de.simplicit.vjdbc.command.DecoratedCommandSink;
 import de.simplicit.vjdbc.command.NullCallingContextFactory;
 import de.simplicit.vjdbc.command.StandardCallingContextFactory;
-import de.simplicit.vjdbc.ejb.EjbCommandSink;
 import de.simplicit.vjdbc.ejb.EjbCommandSinkProxy;
 import de.simplicit.vjdbc.rmi.CommandSinkRmi;
 import de.simplicit.vjdbc.rmi.CommandSinkRmiProxy;
@@ -43,7 +39,7 @@ import de.simplicit.vjdbc.util.ClientInfo;
 import de.simplicit.vjdbc.util.SQLExceptionHelper;
 
 public final class VirtualDriver implements Driver {
-    private static Log _logger = LogFactory.getLog(VirtualDriver.class);
+    private static Logger _logger = Logger.getLogger(VirtualDriver.class.getName());
 
     private static final String VJDBC_IDENTIFIER = "jdbc:vjdbc:";
     private static final String EJB_IDENTIFIER = "ejb:";
@@ -67,11 +63,11 @@ public final class VirtualDriver implements Driver {
                 _logger.info("Couldn't load HSQL-Driver, caching deactivated");
                 _cacheEnabled = false;
             } catch(Exception e) {
-                _logger.error("Unexpected exception occured on loading the HSQL-Driver");
+                _logger.severe("Unexpected exception occured on loading the HSQL-Driver");
                 _cacheEnabled = false;
             }
         } catch(Exception e) {
-            _logger.fatal("Couldn't register Virtual-JDBC-Driver !", e);
+            _logger.log(Level.SEVERE, "Couldn't register Virtual-JDBC-Driver !", e);
             throw new RuntimeException("Couldn't register Virtual-JDBC-Driver !", e);
         }
     }
@@ -145,7 +141,7 @@ public final class VirtualDriver implements Driver {
                 // return the new connection
                 result = new VirtualConnection(reg, decosink, props, _cacheEnabled);
             } catch(Exception e) {
-                _logger.error(e);
+                _logger.log(Level.SEVERE, "Error while connecting", e);
                 throw SQLExceptionHelper.wrap(e);
             }
         }
@@ -200,10 +196,10 @@ public final class VirtualDriver implements Driver {
         String requestEnhancerFactoryClassName = props.getProperty(VJdbcProperties.SERVLET_REQUEST_ENHANCER_FACTORY);
 
         if(requestEnhancerFactoryClassName != null) {
-            _logger.debug("Found RequestEnhancerFactory class: " + requestEnhancerFactoryClassName);
+            _logger.fine("Found RequestEnhancerFactory class: " + requestEnhancerFactoryClassName);
             Class requestEnhancerFactoryClass = Class.forName(requestEnhancerFactoryClassName);
             RequestEnhancerFactory requestEnhancerFactory = (RequestEnhancerFactory)requestEnhancerFactoryClass.newInstance();
-            _logger.debug("RequestEnhancerFactory successfully created");
+            _logger.fine("RequestEnhancerFactory successfully created");
             requestEnhancer = requestEnhancerFactory.create();
         }
 

@@ -4,25 +4,25 @@
 
 package de.simplicit.vjdbc.server.servlet;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import de.simplicit.vjdbc.command.Command;
 import de.simplicit.vjdbc.serial.CallingContext;
@@ -33,14 +33,13 @@ import de.simplicit.vjdbc.server.config.VJdbcConfiguration;
 import de.simplicit.vjdbc.servlet.ServletCommandSinkIdentifier;
 import de.simplicit.vjdbc.util.SQLExceptionHelper;
 import de.simplicit.vjdbc.util.StreamCloser;
-import javax.servlet.ServletContext;
 
 public class ServletCommandSink extends HttpServlet {
     private static final String INIT_PARAMETER_CONFIG_RESOURCE = "config-resource";
     private static final String INIT_PARAMETER_CONFIG_VARIABLES = "config-variables";
     private static final String DEFAULT_CONFIG_RESOURCE = "/WEB-INF/vjdbc-config.xml";
     private static final long serialVersionUID = 3257570624301249846L;
-    private static Log _logger = LogFactory.getLog(ServletCommandSink.class);
+    private static Logger _logger = Logger.getLogger(ServletCommandSink.class.getName());
 
     private CommandProcessor _processor;
 
@@ -71,7 +70,7 @@ public class ServletCommandSink extends HttpServlet {
 
         if(configResourceInputStream == null) {
             String msg = "VJDBC-Configuration " + configResource + " not found !";
-            _logger.error(msg);
+            _logger.severe(msg);
             throw new ServletException(msg);
         }
 
@@ -93,7 +92,7 @@ public class ServletCommandSink extends HttpServlet {
 
                 if(configVariablesInputStream == null) {
                     String msg = "Configuration-Variables " + configVariables + " not found !";
-                    _logger.error(msg);
+                    _logger.severe(msg);
                     throw new ServletException(msg);
                 }
 
@@ -101,7 +100,7 @@ public class ServletCommandSink extends HttpServlet {
                 configVariablesProps.load(configVariablesInputStream);
             } catch (IOException e) {
                 String msg = "Reading of configuration variables failed";
-                _logger.error(msg, e);
+                _logger.log(Level.SEVERE, msg, e);
                 throw new ServletException(msg, e);
             } finally {
                 if(configVariablesInputStream != null) {
@@ -117,7 +116,7 @@ public class ServletCommandSink extends HttpServlet {
             VJdbcConfiguration.init(configResourceInputStream, configVariablesProps);
             _processor = CommandProcessor.getInstance();
         } catch (ConfigurationException e) {
-            _logger.error("Initialization failed", e);
+            _logger.log(Level.SEVERE, "Initialization failed", e);
             throw new ServletException("VJDBC-Initialization failed", e);
         } finally {
                 StreamCloser.close(configResourceInputStream);
@@ -192,7 +191,7 @@ public class ServletCommandSink extends HttpServlet {
                 httpServletResponse.sendRedirect("index.html");
             }
         } catch (Exception e) {
-            _logger.error("Unexpected Exception", e);
+            _logger.log(Level.SEVERE, "Unexpected Exception", e);
             throw new ServletException(e);
         } finally {
             StreamCloser.close(ois);
